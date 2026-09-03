@@ -5,10 +5,8 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from ..domain.extract import (
-    detect_remote_scope,
-    detect_remote_type,
+    extract_location_facts,
     extract_employment_type,
-    parse_locations,
 )
 from ..domain.fingerprint import canonicalize_url, content_hash, identity_fingerprint
 from ..domain.models import Job, RawPosting
@@ -32,14 +30,7 @@ def normalize_posting(posting: RawPosting, *, now: datetime | None = None) -> Jo
     company_norm = normalize_company(posting.company_name)
     loc_norm = normalize_location(posting.location_raw)
 
-    locations, country = parse_locations(posting.location_raw)
-    if not country:
-        # Fall back to scanning the description: many ATS postings leave the
-        # location field empty but state it in the body.
-        locations, country = parse_locations(description[:1500])
-
-    remote_type = detect_remote_type(posting.title, posting.location_raw, description)
-    remote_scope, _ = detect_remote_scope(posting.location_raw, description)
+    location = extract_location_facts(posting.title, posting.location_raw, description)
     employment = extract_employment_type(posting.title, description, posting.employment_hint)
 
     fingerprint = identity_fingerprint(
@@ -59,10 +50,10 @@ def normalize_posting(posting: RawPosting, *, now: datetime | None = None) -> Jo
         company_name_raw=posting.company_name.strip(),
         company_normalized=company_norm,
         location_raw=posting.location_raw.strip(),
-        locations=locations,
-        country=country,
-        remote_type=remote_type.value,
-        remote_scope=remote_scope.value,
+        locations=location.cities,
+        country=location.country,
+        remote_type=location.remote_type.value,
+        remote_scope=location.remote_scope.value,
         employment_type=employment.value,
         description_text=description,
         apply_url=posting.apply_url,

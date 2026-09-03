@@ -60,23 +60,43 @@ def match_skills(description: str, profile: Profile) -> tuple[list[str], list[st
     return hits(profile.skills.strong), hits(profile.skills.familiar)
 
 
-def location_score(job: Job, profile: Profile) -> tuple[float, str]:
+def location_score(job: Job, profile: Profile, signals: dict | None = None) -> tuple[float, str]:
     """0..1 location fit plus a human-readable reason."""
+    location = (signals or {}).get("location") or {}
     preferred = {p.strip().lower() for p in profile.preferred_locations}
-    job_cities = {c.lower() for c in job.locations}
+    job_cities = {c.lower() for c in (location.get("cities") or job.locations)}
     if job_cities & preferred:
         return 1.0, f"preferred city: {', '.join(sorted(job_cities & preferred))}"
+    bucket = location.get("bucket")
+    reason = location.get("reason")
+    status = location.get("status")
+    if bucket == "india_remote":
+        return 0.95, reason or "remote within India"
+    if bucket == "india_multi_location":
+        return 0.92, reason or "India included among listed locations"
+    if bucket in {"india_city", "india_country"}:
+        return 0.88, reason or "India location stated"
+    if bucket == "remote_global":
+        return 0.68, reason or "explicitly global remote"
+    if bucket == "remote_apac":
+        return 0.6, reason or "explicitly APAC remote"
+    if status == "unknown":
+        return 0.3, reason or "location eligibility unknown"
+
+    # Fallback for direct unit tests that do not pass filter signals.
     if job.country == "IN" and job.remote_type == RemoteType.REMOTE.value:
-        return 0.9, "remote within India"
+        return 0.95, "remote within India"
     if job.country == "IN":
-        return 0.8, "India, non-preferred city"
+        return 0.88, "India location stated"
     if job.remote_scope == RemoteScope.INDIA.value:
-        return 0.9, "remote, India-eligible"
-    if job.remote_scope in (RemoteScope.GLOBAL.value, RemoteScope.APAC.value):
-        return 0.65, f"remote, {job.remote_scope}"
+        return 0.95, "remote within India"
+    if job.remote_scope == RemoteScope.GLOBAL.value:
+        return 0.68, "explicitly global remote"
+    if job.remote_scope == RemoteScope.APAC.value:
+        return 0.6, "explicitly APAC remote"
     if job.remote_type == RemoteType.REMOTE.value:
-        return 0.5, "remote, scope unclear"
-    return 0.35, "location unclear"
+        return 0.3, "remote eligibility unclear"
+    return 0.25, "location eligibility unknown"
 
 
 def freshness_score(job: Job, now: datetime, halflife_hours: float) -> tuple[float, float]:
@@ -139,7 +159,7 @@ def score_job(
     comp.freshness = w.freshness * f_raw
     explanation.append(f"{age_hours:.0f}h old")
 
-    l_raw, l_reason = location_score(job, profile)
+    l_raw, l_reason = location_score(job, profile, signals)
     comp.location = w.location * l_raw
     explanation.append(l_reason)
 
@@ -172,9 +192,16 @@ def score_job(
     elif emp == "contract":
         flags.append("contract")
 
+    location = signals.get("location") or {}
     if signals.get("early_career_signal"):
         adj += config.early_career_title_bonus
-    if job.remote_type == RemoteType.HYBRID.value:
+    if location.get("status") == "unknown":
+        flags.append("location eligibility unknown")
+    elif location.get("bucket") == "remote_global":
+        flags.append("global remote")
+    elif location.get("bucket") == "remote_apac":
+        flags.append("APAC remote")
+    if (location.get("remote_type") or job.remote_type) == RemoteType.HYBRID.value:
         flags.append("hybrid")
     if signals.get("work_auth_blocker"):
         flags.append("work-auth language present")

@@ -164,6 +164,103 @@ def test_rerun_recomputes_without_refetching(conn, config):
     assert JobRepo(conn).count() == 1
 
 
+def test_rerun_reassesses_location_from_text_not_stale_stored_fields(conn, config):
+    bad_desc = ("We need deep experience in distributed systems and public cloud platforms. "
+                "3+ years is preferred. ") * 8
+    ids = _ingest(conn, [
+        _posting(
+            external_id="gh:sf",
+            title="Software Engineer, Platform",
+            location_raw="San Francisco, CA; New York, NY",
+            description_text=bad_desc,
+            apply_url="https://acme.example/jobs/sf",
+            canonical_url="https://acme.example/jobs/sf",
+        ),
+        _posting(
+            external_id="gh:in",
+            title="Backend Engineer",
+            location_raw="Bengaluru, India",
+            apply_url="https://acme.example/jobs/in",
+            canonical_url="https://acme.example/jobs/in",
+        ),
+    ])
+    foreign_id, india_id = ids
+
+    conn.execute(
+        "UPDATE jobs SET country='US', remote_type='remote', remote_scope='unknown' WHERE id=?",
+        (foreign_id,),
+    )
+
+    pipeline_service.run_all(conn, config, skip_discover=True, rerun=True)
+
+    filtered = FilterRepo(conn).get(foreign_id)
+    assert "country" in json.loads(filtered["rules_failed"])
+
+    top = ScoreRepo(conn).top(10)
+    assert [row["id"] for row in top] == [india_id]
+
+
+def test_pipeline_excludes_clear_business_support_titles_but_keeps_unusual_engineering(conn, config):
+    _ingest(conn, [
+        _posting(
+            external_id="gh:ops",
+            title="Strategy and Operations Associate",
+            apply_url="https://acme.example/jobs/ops",
+            canonical_url="https://acme.example/jobs/ops",
+        ),
+        _posting(
+            external_id="gh:support",
+            title="Intermediate Support Engineer",
+            apply_url="https://acme.example/jobs/support",
+            canonical_url="https://acme.example/jobs/support",
+        ),
+        _posting(
+            external_id="gh:money",
+            title="Associate - Monetisation",
+            apply_url="https://acme.example/jobs/money",
+            canonical_url="https://acme.example/jobs/money",
+        ),
+        _posting(
+            external_id="gh:ap",
+            title="Accounts Payable, Spend Management Coordinator",
+            location_raw="Remote, India",
+            apply_url="https://acme.example/jobs/ap",
+            canonical_url="https://acme.example/jobs/ap",
+        ),
+        _posting(
+            external_id="gh:sdk",
+            title="SDK Engineer - JavaScript",
+            apply_url="https://acme.example/jobs/sdk",
+            canonical_url="https://acme.example/jobs/sdk",
+        ),
+        _posting(
+            external_id="gh:infra",
+            title="Associate Infrastructure Engineer",
+            apply_url="https://acme.example/jobs/infra",
+            canonical_url="https://acme.example/jobs/infra",
+        ),
+    ])
+
+    pipeline_service.run_all(conn, config, skip_discover=True)
+
+    failed_titles = {
+        row["title"]: json.loads(FilterRepo(conn).get(row["id"])["rules_failed"])
+        for row in conn.execute("SELECT id, title FROM jobs")
+    }
+    for title in (
+        "Strategy and Operations Associate",
+        "Intermediate Support Engineer",
+        "Associate - Monetisation",
+        "Accounts Payable, Spend Management Coordinator",
+    ):
+        assert "title_role" in failed_titles[title], title
+
+    top_titles = [row["title"] for row in ScoreRepo(conn).top(10)]
+    assert "SDK Engineer - JavaScript" in top_titles
+    assert "Associate Infrastructure Engineer" in top_titles
+    assert "Strategy and Operations Associate" not in top_titles
+
+
 def test_filter_explanations_are_recorded(conn, config):
     """A5: every excluded job must be explainable."""
     _ingest(conn, [

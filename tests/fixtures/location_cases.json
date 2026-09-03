@@ -1,0 +1,338 @@
+[
+  {
+    "name": "scale_sf_ny_distributed_not_remote",
+    "title": "Software Engineer, Platform",
+    "location_raw": "San Francisco, CA; New York, NY",
+    "description_text": "We need deep experience building distributed systems and public cloud platforms. 3+ years is preferred.",
+    "expected": {
+      "country": "US",
+      "remote_type": "unknown",
+      "remote_scope": "unknown",
+      "passed": false,
+      "rule": "country",
+      "bucket": "foreign_office"
+    }
+  },
+  {
+    "name": "twilio_remote_estonia",
+    "title": "Software Engineer",
+    "location_raw": "Remote - Estonia",
+    "description_text": "Our dedication to remote-first work and global inclusion means you can collaborate from your assigned country.",
+    "expected": {
+      "country": "EE",
+      "remote_type": "remote",
+      "remote_scope": "unknown",
+      "passed": false,
+      "rule": "remote_scope",
+      "bucket": "remote_restricted"
+    }
+  },
+  {
+    "name": "mexico_city_is_excluded",
+    "title": "Deployed Engineer - LATAM",
+    "location_raw": "Mexico City",
+    "description_text": "Partner with customers to deploy product capabilities.",
+    "expected": {
+      "country": "MX",
+      "remote_type": "unknown",
+      "remote_scope": "unknown",
+      "passed": false,
+      "rule": "country",
+      "bucket": "foreign_office"
+    }
+  },
+  {
+    "name": "budapest_hungary_is_excluded",
+    "title": "Software Engineer (Backend), Enterprise",
+    "location_raw": "Budapest, Hungary",
+    "description_text": "Build backend services with Python and distributed systems.",
+    "expected": {
+      "country": "HU",
+      "remote_type": "unknown",
+      "remote_scope": "unknown",
+      "passed": false,
+      "rule": "country",
+      "bucket": "foreign_office"
+    }
+  },
+  {
+    "name": "mountain_view_is_excluded",
+    "title": "Data Engineer",
+    "location_raw": "Mountain View",
+    "description_text": "Build data pipelines with Python and SQL.",
+    "expected": {
+      "country": "US",
+      "remote_type": "unknown",
+      "remote_scope": "unknown",
+      "passed": false,
+      "rule": "country",
+      "bucket": "foreign_office"
+    }
+  },
+  {
+    "name": "bangkok_is_excluded",
+    "title": "Agoda Tech - Software Engineering & Engineering Management roles (Hywel)",
+    "location_raw": "Bangkok",
+    "description_text": "Build product engineering systems.",
+    "expected": {
+      "country": "TH",
+      "remote_type": "unknown",
+      "remote_scope": "unknown",
+      "passed": false,
+      "rule": "country",
+      "bucket": "foreign_office"
+    }
+  },
+  {
+    "name": "gitlab_remote_emea",
+    "title": "Intermediate Backend Engineer, EMEA",
+    "location_raw": "Remote, Poland",
+    "description_text": "You will communicate clearly in a remote, asynchronous environment.",
+    "expected": {
+      "country": "PL",
+      "remote_type": "remote",
+      "remote_scope": "emea_only",
+      "passed": false,
+      "rule": "remote_scope",
+      "bucket": "remote_restricted"
+    }
+  },
+  {
+    "name": "gitlab_remote_india",
+    "title": "Intermediate Backend Engineer, India",
+    "location_raw": "Remote, India",
+    "description_text": "Build backend services with Python and PostgreSQL.",
+    "expected": {
+      "country": "IN",
+      "remote_type": "remote",
+      "remote_scope": "india",
+      "passed": true,
+      "rule": null,
+      "bucket": "india_remote"
+    }
+  },
+  {
+    "name": "remote_unknown_kept_unknown",
+    "title": "Software Engineer",
+    "location_raw": "Remote",
+    "description_text": "Build APIs with Python and FastAPI.",
+    "expected": {
+      "country": null,
+      "remote_type": "remote",
+      "remote_scope": "unknown",
+      "passed": true,
+      "rule": null,
+      "bucket": "unknown_remote"
+    }
+  },
+  {
+    "name": "us_remote_marker_is_excluded",
+    "title": "Industrial Compute",
+    "location_raw": "US - Remote",
+    "description_text": "Build compute systems for large-scale training.",
+    "expected": {
+      "country": null,
+      "remote_type": "remote",
+      "remote_scope": "us_only",
+      "passed": false,
+      "rule": "remote_scope",
+      "bucket": "remote_restricted"
+    }
+  },
+  {
+    "name": "austria_remote_is_excluded",
+    "title": "Machine Learning Engineer",
+    "location_raw": "Austria (remote)",
+    "description_text": "Build production machine learning systems.",
+    "expected": {
+      "country": "AT",
+      "remote_type": "remote",
+      "remote_scope": "unknown",
+      "passed": false,
+      "rule": "remote_scope",
+      "bucket": "remote_restricted"
+    }
+  },
+  {
+    "name": "us_canada_remote_snippet_is_excluded",
+    "title": "Associate Infrastructure Engineer",
+    "location_raw": "CA Remote (BC & ON only); U.S. Remote",
+    "description_text": "Location: Remote-first (United States; BC & ON, Canada). Build platform systems with Python.",
+    "expected": {
+      "country": null,
+      "remote_type": "remote",
+      "remote_scope": "us_only",
+      "passed": false,
+      "rule": "remote_scope",
+      "bucket": "remote_restricted"
+    }
+  },
+  {
+    "name": "australia_remote_apac_with_country_is_excluded",
+    "title": "Customer Engineer, APAC",
+    "location_raw": "Australia (Remote)",
+    "description_text": "Work with customers across APAC on product adoption.",
+    "expected": {
+      "country": "AU",
+      "remote_type": "remote",
+      "remote_scope": "apac",
+      "passed": false,
+      "rule": "remote_scope",
+      "bucket": "remote_restricted"
+    }
+  },
+  {
+    "name": "remote_apac_without_country_stays_eligible",
+    "title": "Software Engineer, APAC",
+    "location_raw": "Remote, APAC",
+    "description_text": "Build backend services with Python and TypeScript.",
+    "expected": {
+      "country": null,
+      "remote_type": "remote",
+      "remote_scope": "apac",
+      "passed": true,
+      "rule": null,
+      "bucket": "remote_apac"
+    }
+  },
+  {
+    "name": "mixed_india_and_us_locations",
+    "title": "Backend Engineer",
+    "location_raw": "Bengaluru, India; San Francisco, CA",
+    "description_text": "Build APIs with Python and FastAPI.",
+    "expected": {
+      "country": "IN",
+      "remote_type": "unknown",
+      "remote_scope": "unknown",
+      "passed": true,
+      "rule": null,
+      "bucket": "india_multi_location"
+    }
+  },
+  {
+    "name": "argentina_uruguay_multi_location_is_excluded",
+    "title": "Software Engineer, Robotics",
+    "location_raw": "Argentina; Uruguay",
+    "description_text": "Build robotics software for industrial systems.",
+    "expected": {
+      "country": null,
+      "remote_type": "unknown",
+      "remote_scope": "unknown",
+      "passed": false,
+      "rule": "country",
+      "bucket": "foreign_office"
+    }
+  },
+  {
+    "name": "barcelona_description_does_not_become_us",
+    "title": "Backend Engineer",
+    "location_raw": "Barcelona",
+    "description_text": "Location: Barcelona, Spain. We offer a personal development budget and work from home budget.",
+    "expected": {
+      "country": "ES",
+      "remote_type": "unknown",
+      "remote_scope": "unknown",
+      "passed": false,
+      "rule": "country",
+      "bucket": "foreign_office"
+    }
+  },
+  {
+    "name": "europe_region_is_excluded",
+    "title": "Software Engineer, Integrations",
+    "location_raw": "Europe",
+    "description_text": "Build APIs with Python and TypeScript.",
+    "expected": {
+      "country": null,
+      "remote_type": "unknown",
+      "remote_scope": "unknown",
+      "passed": false,
+      "rule": "country",
+      "bucket": "foreign_office"
+    }
+  },
+  {
+    "name": "china_country_is_excluded",
+    "title": "Machine Learning Engineer, AI Platform",
+    "location_raw": "China",
+    "description_text": "Build production AI systems with Python.",
+    "expected": {
+      "country": "CN",
+      "remote_type": "unknown",
+      "remote_scope": "unknown",
+      "passed": false,
+      "rule": "country",
+      "bucket": "foreign_office"
+    }
+  },
+  {
+    "name": "sf_office_marker_is_excluded",
+    "title": "Software Engineer, Generative AI",
+    "location_raw": "SF Office",
+    "description_text": "Build backend services with Python and TypeScript.",
+    "expected": {
+      "country": "US",
+      "remote_type": "unknown",
+      "remote_scope": "unknown",
+      "passed": false,
+      "rule": "country",
+      "bucket": "foreign_office"
+    }
+  },
+  {
+    "name": "israel_location_does_not_fallback_to_india",
+    "title": "Enterprise Solutions Engineer, Israel",
+    "location_raw": "Tel Aviv District, Israel",
+    "description_text": "Candidates are based in Bangalore, employees currently work in the office three days a week.",
+    "expected": {
+      "country": "IL",
+      "remote_type": "unknown",
+      "remote_scope": "unknown",
+      "passed": false,
+      "rule": "country",
+      "bucket": "foreign_office"
+    }
+  },
+  {
+    "name": "washington_dc_is_us_office",
+    "title": "Workplace & Engagement Coordinator",
+    "location_raw": "Washington, D.C.",
+    "description_text": "Coordinate workplace events and office operations.",
+    "expected": {
+      "country": "US",
+      "remote_type": "unknown",
+      "remote_scope": "unknown",
+      "passed": false,
+      "rule": "country",
+      "bucket": "foreign_office"
+    }
+  },
+  {
+    "name": "sao_paulo_accent_is_excluded",
+    "title": "Applied AI Engineer, Enterprise",
+    "location_raw": "São Paulo",
+    "description_text": "Build applied AI systems for enterprise customers.",
+    "expected": {
+      "country": "BR",
+      "remote_type": "unknown",
+      "remote_scope": "unknown",
+      "passed": false,
+      "rule": "country",
+      "bucket": "foreign_office"
+    }
+  },
+  {
+    "name": "san_mateo_is_us_office",
+    "title": "AI Product Engineer - Nexus",
+    "location_raw": "San Mateo",
+    "description_text": "Build AI features with Python and TypeScript.",
+    "expected": {
+      "country": "US",
+      "remote_type": "unknown",
+      "remote_scope": "unknown",
+      "passed": false,
+      "rule": "country",
+      "bucket": "foreign_office"
+    }
+  }
+]

@@ -57,6 +57,39 @@ def test_preferred_city_beats_unclear_location(profile, ranking):
             > _score(vague, profile, ranking).components.location)
 
 
+def test_remote_india_beats_global_remote(profile, ranking):
+    india = _score(
+        make_job(description_text=JD, location_raw="Remote, India", locations=[], country="IN", remote_type="remote"),
+        profile,
+        ranking,
+        signals={"location": {"bucket": "india_remote", "status": "eligible", "reason": "remote within India"}},
+    )
+    global_remote = _score(
+        make_job(description_text=JD, location_raw="Remote", locations=[], country=None, remote_type="remote"),
+        profile,
+        ranking,
+        signals={"location": {"bucket": "remote_global", "status": "eligible", "reason": "explicitly global remote"}},
+    )
+    assert india.components.location > global_remote.components.location
+
+
+def test_unknown_location_is_flagged_and_scored_lower(profile, ranking):
+    unknown = _score(
+        make_job(description_text=JD, location_raw="Remote", locations=[], country=None, remote_type="remote"),
+        profile,
+        ranking,
+        signals={"location": {"bucket": "unknown_remote", "status": "unknown", "reason": "remote eligibility unclear"}},
+    )
+    india = _score(
+        make_job(description_text=JD, location_raw="Bengaluru, India", locations=["Bengaluru"], country="IN"),
+        profile,
+        ranking,
+        signals={"location": {"bucket": "india_city", "status": "eligible", "reason": "India location stated", "cities": ["Bengaluru"]}},
+    )
+    assert unknown.components.location < india.components.location
+    assert "location eligibility unknown" in unknown.flags
+
+
 def test_yoe_adjustments_follow_policy(profile, ranking):
     job = make_job(description_text=JD)
     scores = {}

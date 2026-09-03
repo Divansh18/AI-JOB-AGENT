@@ -5,7 +5,7 @@
 # a signal is missing, the job is KEPT. Missing a good role costs far more
 # than reading a bad card.
 
-version: 1
+version: 2
 
 titles:
   include_tiers: [core_swe, stack, ai]
@@ -28,8 +28,8 @@ locations:
   allow_countries: [IN]
   remote:
     allow: true
-    allowed_scopes: [india, apac, global, unknown]
-    exclude_scopes: [us_only, uk_only, eu_only, canada_only]
+    allowed_scopes: [india, apac, global]
+    exclude_scopes: [us_only, uk_only, eu_only, emea_only, canada_only, other_restricted]
   unknown_policy: pass
 
 employment:

@@ -1,0 +1,227 @@
+[
+  {
+    "name": "strategy_operations_associate",
+    "title": "Strategy and Operations Associate",
+    "expected": {
+      "tier": "excluded",
+      "passed": false,
+      "rule": "title_role"
+    }
+  },
+  {
+    "name": "support_engineer",
+    "title": "Intermediate Support Engineer",
+    "expected": {
+      "tier": "excluded",
+      "passed": false,
+      "rule": "title_role"
+    }
+  },
+  {
+    "name": "monetisation_associate",
+    "title": "Associate - Monetisation",
+    "expected": {
+      "tier": "excluded",
+      "passed": false,
+      "rule": "title_role"
+    }
+  },
+  {
+    "name": "accounts_payable_coordinator",
+    "title": "Accounts Payable, Spend Management Coordinator",
+    "expected": {
+      "tier": "excluded",
+      "passed": false,
+      "rule": "title_role"
+    }
+  },
+  {
+    "name": "supply_analytics_analyst",
+    "title": "Analyst (Supply Analytics, Bangkok-based, Relocation provided)",
+    "expected": {
+      "tier": "excluded",
+      "passed": false,
+      "rule": "title_role"
+    }
+  },
+  {
+    "name": "product_management_devices",
+    "title": "PPSL- Product Management- Devices",
+    "expected": {
+      "tier": "excluded",
+      "passed": false,
+      "rule": "title_role"
+    }
+  },
+  {
+    "name": "deal_desk",
+    "title": "Deal Desk",
+    "expected": {
+      "tier": "excluded",
+      "passed": false,
+      "rule": "title_role"
+    }
+  },
+  {
+    "name": "admin_operations_intern",
+    "title": "Intern - Admin and Operations",
+    "expected": {
+      "tier": "excluded",
+      "passed": false,
+      "rule": "title_role"
+    }
+  },
+  {
+    "name": "product_research_specialist",
+    "title": "Product Research Specialist (W from Groww)",
+    "expected": {
+      "tier": "excluded",
+      "passed": false,
+      "rule": "title_role"
+    }
+  },
+  {
+    "name": "language_expert",
+    "title": "Language Expert - Taiwan (Bangkok Based)",
+    "expected": {
+      "tier": "excluded",
+      "passed": false,
+      "rule": "title_role"
+    }
+  },
+  {
+    "name": "creative_sourcer",
+    "title": "Creative Sourcer",
+    "expected": {
+      "tier": "excluded",
+      "passed": false,
+      "rule": "title_role"
+    }
+  },
+  {
+    "name": "growth_business_role",
+    "title": "growth and business - max and wallet",
+    "expected": {
+      "tier": "excluded",
+      "passed": false,
+      "rule": "title_role"
+    }
+  },
+  {
+    "name": "workplace_engagement_coordinator",
+    "title": "Workplace & Engagement Coordinator",
+    "expected": {
+      "tier": "excluded",
+      "passed": false,
+      "rule": "title_role"
+    }
+  },
+  {
+    "name": "developer_relations_engineer",
+    "title": "Developer Relations Engineer",
+    "expected": {
+      "tier": "excluded",
+      "passed": false,
+      "rule": "title_role"
+    }
+  },
+  {
+    "name": "presales_solutions_engineer",
+    "title": "Value Solutions Engineer (Inside Presales - America Region)",
+    "expected": {
+      "tier": "excluded",
+      "passed": false,
+      "rule": "title_role"
+    }
+  },
+  {
+    "name": "solution_engineering",
+    "title": "Solution Engineering",
+    "expected": {
+      "tier": "excluded",
+      "passed": false,
+      "rule": "title_role"
+    }
+  },
+  {
+    "name": "solution_engineer",
+    "title": "Solution Engineer - Insurance & Asset Management",
+    "expected": {
+      "tier": "excluded",
+      "passed": false,
+      "rule": "title_role"
+    }
+  },
+  {
+    "name": "service_desk_specialist",
+    "title": "Service Desk Specialist",
+    "expected": {
+      "tier": "excluded",
+      "passed": false,
+      "rule": "title_role"
+    }
+  },
+  {
+    "name": "sdk_engineer",
+    "title": "SDK Engineer - JavaScript",
+    "expected": {
+      "tier": "stack",
+      "passed": true,
+      "rule": null
+    }
+  },
+  {
+    "name": "performance_engineer",
+    "title": "Performance Engineer - Benchmarking",
+    "expected": {
+      "tier": "adjacent",
+      "passed": true,
+      "rule": null
+    }
+  },
+  {
+    "name": "associate_infrastructure_engineer",
+    "title": "Associate Infrastructure Engineer",
+    "expected": {
+      "tier": "adjacent",
+      "passed": true,
+      "rule": null
+    }
+  },
+  {
+    "name": "product_engineer_operations_context",
+    "title": "Product Engineer - Manufacturing Operations",
+    "expected": {
+      "tier": "core_swe",
+      "passed": true,
+      "rule": null
+    }
+  },
+  {
+    "name": "software_engineer_analytics_platform",
+    "title": "Software Engineer, Analytics Platform",
+    "expected": {
+      "tier": "core_swe",
+      "passed": true,
+      "rule": null
+    }
+  },
+  {
+    "name": "research_software_engineer",
+    "title": "Research Software Engineer",
+    "expected": {
+      "tier": "core_swe",
+      "passed": true,
+      "rule": null
+    }
+  },
+  {
+    "name": "business_systems_developer",
+    "title": "Business Systems Developer",
+    "expected": {
+      "tier": "ambiguous",
+      "passed": true,
+      "rule": null
+    }
+  }
+]

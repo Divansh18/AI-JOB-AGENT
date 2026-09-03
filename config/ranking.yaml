@@ -2,7 +2,7 @@
 # embeddings), so tuning these is cheap and reversible:
 #   jobsearch rank --rerun
 
-version: 1
+version: 2
 
 weights:
   semantic: 40      # percentile-normalised cosine, profile vs JD

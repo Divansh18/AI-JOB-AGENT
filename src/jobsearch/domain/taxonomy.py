@@ -53,6 +53,7 @@ STACK_PATTERNS = [
     r"\bweb engineer\b",
     r"\bapi engineer\b",
     r"\bplatform engineer\b",
+    r"\bsdk engineer\b",
     r"\bnode\.?js (engineer|developer)\b",
     r"\breact (engineer|developer)\b",
     r"\bpython (engineer|developer)\b",
@@ -76,9 +77,10 @@ AI_PATTERNS = [
 
 ADJACENT_PATTERNS = [
     r"\bdata engineer\b",
-    r"\bsolutions engineer\b",
     r"\bintegration engineer\b",
     r"\bsystems engineer\b",
+    r"\binfrastructure engineer\b",
+    r"\bperformance engineer\b",
     r"\bmobile (engineer|developer)\b",
     r"\bandroid (engineer|developer)\b",
     r"\bios (engineer|developer)\b",
@@ -95,9 +97,20 @@ EXCLUDED_ROLE_PATTERNS = [
     r"\bautomation test\b",
     r"\bsdet\b",
     r"\btechnical support\b",
+    r"\bsupport engineer\b",
     r"\bcustomer (support|success)\b",
+    r"\bcustomer experience engineer\b",
+    r"\bdeveloper relations\b",
+    r"\bdevrel\b",
+    r"\bfield engineer\b",
+    r"\baccount engineer\b",
+    r"\boperations engineer\b",
+    r"\bsolutions? engineer(?:ing)?\b",
+    r"\bpresales\b",
+    r"\bservice desk\b",
     r"\bsales\b",
     r"\baccount executive\b",
+    r"\bbusiness development\b",
     r"\brecruit(er|ing)\b",
     r"\btalent acquisition\b",
     r"\bdata entry\b",
@@ -111,7 +124,11 @@ EXCLUDED_ROLE_PATTERNS = [
     r"\bbusiness analyst\b",
     r"\bproject manager\b",
     r"\bproduct manager\b",
+    r"\bproduct management\b",
     r"\bscrum master\b",
+    r"\bdeal desk\b",
+    r"\blanguage expert\b",
+    r"\bsourcer\b",
     r"\bdesigner\b",
     r"\bmarketing\b",
     r"\bfinance\b",
@@ -119,6 +136,59 @@ EXCLUDED_ROLE_PATTERNS = [
     r"\bteacher\b",
     r"\binstructor\b",
     r"\bfaculty\b",
+]
+
+# Titles without an engineering head-word are only kept as "ambiguous" when
+# they are genuinely unclear. Generic business-function roles should be
+# filtered out even if their titles omit explicit excluded nouns like "sales".
+ENGINEERING_ANCHOR_PATTERNS = [
+    r"\bengineer\b",
+    r"\bdeveloper\b",
+    r"\bsde\b",
+    r"\bsoftware\b",
+    r"\bmember of technical staff\b",
+    r"\bprogrammer\b",
+]
+
+GENERIC_BUSINESS_ROLE_PATTERNS = [
+    r"\bassociate\b",
+    r"\banalyst\b",
+    r"\bspecialist\b",
+    r"\bcoordinator\b",
+    r"\brepresentative\b",
+    r"\bpartner\b",
+    r"\badministrator\b",
+]
+
+BUSINESS_FUNCTION_PATTERNS = [
+    r"\bstrategy(?:\s*&|\s+and)?\s+operations\b",
+    r"\banalytics?\b",
+    r"\bbusiness\b",
+    r"\bbusiness operations\b",
+    r"\badmin(?:istration)?\b",
+    r"\boperations\b",
+    r"\bbusiness development\b",
+    r"\bmarketing\b",
+    r"\bfinance\b",
+    r"\baccounting\b",
+    r"\baccounts? payable\b",
+    r"\bcustomer support\b",
+    r"\bcustomer success\b",
+    r"\brecruit(?:er|ing)\b",
+    r"\btalent acquisition\b",
+    r"\bcontent\b",
+    r"\bcommercial\b",
+    r"\bcompliance\b",
+    r"\brisk\b",
+    r"\bpartnerships\b",
+    r"\bspend management\b",
+    r"\bmoneti[sz]ation\b",
+    r"\bgrowth\b",
+    r"\bpayments?\b",
+    r"\bresearch\b",
+    r"\bsupport\b",
+    r"\bworkplace\b",
+    r"\bengagement\b",
 ]
 
 # --- Seniority -------------------------------------------------------------
@@ -192,6 +262,33 @@ def _first_match(patterns: list[str], text: str) -> str | None:
     return None
 
 
+def _has_engineering_anchor(text: str) -> bool:
+    return _first_match(ENGINEERING_ANCHOR_PATTERNS, text) is not None
+
+
+def _business_function_matches(text: str) -> list[str]:
+    return [pattern for pattern in BUSINESS_FUNCTION_PATTERNS if re.search(pattern, text)]
+
+
+def _generic_business_title_match(text: str) -> str | None:
+    """Detect generic non-engineering business titles.
+
+    These roles often slipped through as "ambiguous" because their titles were
+    not explicit enough to match the hard-coded exclusion list, but they still
+    clearly sit outside product/software engineering.
+    """
+    if _has_engineering_anchor(text):
+        return None
+
+    role = _first_match(GENERIC_BUSINESS_ROLE_PATTERNS, text)
+    families = _business_function_matches(text)
+    if role and families:
+        return f"{role}::{families[0]}"
+    if len(families) >= 2:
+        return f"{families[0]}::{families[1]}"
+    return None
+
+
 def classify_title(normalized_title: str) -> TitleAnalysis:
     """Classify a *normalized* job title into a tier plus seniority signals."""
     t = normalized_title
@@ -225,6 +322,10 @@ def classify_title(normalized_title: str) -> TitleAnalysis:
         m = _first_match(patterns, t)
         if m:
             return TitleAnalysis(tier, m, seniority_token, level_token, early)
+
+    generic_business = _generic_business_title_match(t)
+    if generic_business:
+        return TitleAnalysis(TitleTier.EXCLUDED, generic_business, seniority_token, level_token, early)
 
     # Unrecognised but not clearly wrong: keep it, rank it low. Optimising
     # against false negatives is an explicit design goal.

@@ -10,14 +10,18 @@ from __future__ import annotations
 import re
 from datetime import datetime, timezone
 
-from ..config.schemas import Filters
+from ..config.schemas import Filters, LocationFilters
 from .extract import (
+    COUNTRY_NAMES,
     EmploymentType,
+    LocationFacts,
+    REGION_NAMES,
     RemoteScope,
     RemoteType,
     YoeAnalysis,
     YoeVerdict,
     detect_work_auth_blocker,
+    extract_location_facts,
     extract_yoe,
 )
 from .models import FilterResult, Job
@@ -44,6 +48,234 @@ def _company_blocked(job: Job, f: Filters) -> bool:
     if any(name == b.strip().lower() for b in f.companies.blocklist):
         return True
     return any(re.search(p, name) for p in f.companies.blocklist_patterns)
+
+
+def _country_names(codes: list[str]) -> str:
+    return ", ".join(COUNTRY_NAMES.get(code, code) for code in codes)
+
+
+def _scope_reason(scope: str) -> str:
+    return {
+        RemoteScope.US_ONLY.value: "remote restricted to the United States",
+        RemoteScope.UK_ONLY.value: "remote restricted to the United Kingdom",
+        RemoteScope.EU_ONLY.value: "remote restricted to the EU/Europe",
+        RemoteScope.EMEA_ONLY.value: "remote restricted to EMEA",
+        RemoteScope.CANADA_ONLY.value: "remote restricted to Canada",
+        RemoteScope.OTHER_RESTRICTED.value: "remote restricted to a foreign region",
+    }.get(scope, f"remote restricted to {scope}")
+
+
+def _region_names(codes: list[str]) -> str:
+    return ", ".join(REGION_NAMES.get(code, code) for code in codes)
+
+
+def _location_result(
+    facts: LocationFacts,
+    *,
+    status: str,
+    bucket: str,
+    reason: str,
+    rule_id: str | None,
+) -> dict:
+    return {
+        "status": status,
+        "bucket": bucket,
+        "reason": reason,
+        "rule_id": rule_id,
+        "cities": facts.cities,
+        "countries": facts.countries,
+        "regions": facts.regions,
+        "country": facts.country,
+        "remote_type": facts.remote_type.value,
+        "remote_scope": facts.remote_scope.value,
+        "multi_location": facts.multi_location,
+        "used_description_fallback": facts.used_description_fallback,
+        "evidence": facts.evidence,
+    }
+
+
+def _assess_location(job: Job, location_filters: LocationFilters) -> dict:
+    facts = extract_location_facts(job.title, job.location_raw, job.description_text)
+    allowed = {code.upper() for code in location_filters.allow_countries}
+    allowed_countries = [code for code in facts.countries if code in allowed]
+    foreign_countries = [code for code in facts.countries if code not in allowed]
+    foreign_regions = [code for code in facts.regions if code not in {"APAC"}]
+
+    if allowed_countries:
+        if facts.remote_scope == RemoteScope.INDIA and facts.remote_type in (
+            RemoteType.REMOTE, RemoteType.HYBRID
+        ):
+            return _location_result(
+                facts,
+                status="eligible",
+                bucket="india_remote",
+                reason="remote within India",
+                rule_id=None,
+            )
+        if foreign_countries or facts.multi_location:
+            return _location_result(
+                facts,
+                status="eligible",
+                bucket="india_multi_location",
+                reason="India included among listed locations",
+                rule_id=None,
+            )
+        if facts.cities:
+            return _location_result(
+                facts,
+                status="eligible",
+                bucket="india_city",
+                reason="India location stated",
+                rule_id=None,
+            )
+        return _location_result(
+            facts,
+            status="eligible",
+            bucket="india_country",
+            reason="India location stated",
+            rule_id=None,
+        )
+
+    if facts.remote_type == RemoteType.REMOTE:
+        if not location_filters.remote.allow:
+            return _location_result(
+                facts,
+                status="ineligible",
+                bucket="remote_blocked",
+                reason="remote roles disabled by config",
+                rule_id="remote_scope",
+            )
+        if facts.remote_scope.value in location_filters.remote.exclude_scopes:
+            return _location_result(
+                facts,
+                status="ineligible",
+                bucket="remote_restricted",
+                reason=_scope_reason(facts.remote_scope.value),
+                rule_id="remote_scope",
+            )
+        if foreign_countries:
+            return _location_result(
+                facts,
+                status="ineligible",
+                bucket="remote_restricted",
+                reason=f"remote restricted to {_country_names(foreign_countries)}",
+                rule_id="remote_scope",
+            )
+        if foreign_regions:
+            return _location_result(
+                facts,
+                status="ineligible",
+                bucket="remote_restricted",
+                reason=f"remote restricted to {_region_names(foreign_regions)}",
+                rule_id="remote_scope",
+            )
+        if facts.remote_scope.value in location_filters.remote.allowed_scopes:
+            if facts.remote_scope == RemoteScope.GLOBAL:
+                return _location_result(
+                    facts,
+                    status="eligible",
+                    bucket="remote_global",
+                    reason="explicitly global remote",
+                    rule_id=None,
+                )
+            if facts.remote_scope == RemoteScope.APAC:
+                return _location_result(
+                    facts,
+                    status="eligible",
+                    bucket="remote_apac",
+                    reason="explicitly APAC remote",
+                    rule_id=None,
+                )
+            if facts.remote_scope == RemoteScope.INDIA:
+                return _location_result(
+                    facts,
+                    status="eligible",
+                    bucket="india_remote",
+                    reason="remote within India",
+                    rule_id=None,
+                )
+        return _location_result(
+            facts,
+            status="unknown",
+            bucket="unknown_remote",
+            reason="remote eligibility unclear",
+            rule_id=None,
+        )
+
+    if facts.remote_type == RemoteType.HYBRID:
+        if facts.remote_scope.value in location_filters.remote.exclude_scopes:
+            return _location_result(
+                facts,
+                status="ineligible",
+                bucket="hybrid_restricted",
+                reason=_scope_reason(facts.remote_scope.value),
+                rule_id="remote_scope",
+            )
+        if foreign_countries:
+            return _location_result(
+                facts,
+                status="ineligible",
+                bucket="foreign_office",
+                reason=f"listed location outside allowed countries: {_country_names(foreign_countries)}",
+                rule_id="country",
+            )
+        if foreign_regions:
+            return _location_result(
+                facts,
+                status="ineligible",
+                bucket="foreign_office",
+                reason=f"listed location outside allowed countries: {_region_names(foreign_regions)}",
+                rule_id="country",
+            )
+        if facts.remote_scope.value in location_filters.remote.allowed_scopes:
+            return _location_result(
+                facts,
+                status="eligible",
+                bucket="remote_apac" if facts.remote_scope == RemoteScope.APAC else "remote_global",
+                reason="explicitly APAC remote" if facts.remote_scope == RemoteScope.APAC else "explicitly global remote",
+                rule_id=None,
+            )
+        return _location_result(
+            facts,
+            status="unknown",
+            bucket="unknown_hybrid",
+            reason="hybrid eligibility unclear",
+            rule_id=None,
+        )
+
+    if foreign_countries:
+        return _location_result(
+            facts,
+            status="ineligible",
+            bucket="foreign_office",
+            reason=f"listed location outside allowed countries: {_country_names(foreign_countries)}",
+            rule_id="country",
+        )
+    if foreign_regions:
+        return _location_result(
+            facts,
+            status="ineligible",
+            bucket="foreign_office",
+            reason=f"listed location outside allowed countries: {_region_names(foreign_regions)}",
+            rule_id="country",
+        )
+
+    if location_filters.unknown_policy != "pass":
+        return _location_result(
+            facts,
+            status="ineligible",
+            bucket="unknown_location",
+            reason="location eligibility unknown",
+            rule_id="country",
+        )
+
+    return _location_result(
+        facts,
+        status="unknown",
+        bucket="unknown_location",
+        reason="location eligibility unknown",
+        rule_id=None,
+    )
 
 
 def evaluate(
@@ -90,18 +322,11 @@ def evaluate(
         notes.append(f"{job.employment_type} - kept but deprioritized in ranking")
 
     # --- geography ---
-    scope = job.remote_scope
-    is_remote = job.remote_type in (RemoteType.REMOTE.value, RemoteType.HYBRID.value)
-    if scope in filters.locations.remote.exclude_scopes:
-        failed.append("remote_scope")
-    elif job.country and job.country not in filters.locations.allow_countries:
-        # Not in India. Keep only if it is genuinely remote and open to a
-        # region I can apply from.
-        eligible = is_remote and scope in filters.locations.remote.allowed_scopes
-        if not eligible:
-            failed.append("country")
-    elif not job.country and filters.locations.unknown_policy != "pass":
-        failed.append("country")
+    location = _assess_location(job, filters.locations)
+    if location["status"] == "ineligible" and location["rule_id"]:
+        failed.append(location["rule_id"])
+    elif location["status"] == "unknown":
+        notes.append(location["reason"])
 
     # --- work authorization ---
     blocker = detect_work_auth_blocker(job.description_text)
@@ -137,9 +362,10 @@ def evaluate(
         "early_career_signal": ta.early_career_signal,
         "yoe": ya.as_signal(),
         "employment_type": job.employment_type,
-        "remote_type": job.remote_type,
-        "remote_scope": scope,
-        "country": job.country,
+        "remote_type": location["remote_type"],
+        "remote_scope": location["remote_scope"],
+        "country": location["country"],
+        "location": location,
         "work_auth_blocker": blocker,
     }
     return FilterResult(passed=not failed, rules_failed=failed, signals=signals, notes=notes)

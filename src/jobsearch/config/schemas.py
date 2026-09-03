@@ -77,10 +77,12 @@ class ExperienceFilters(BaseModel):
 class RemoteFilters(BaseModel):
     allow: bool = True
     allowed_scopes: list[str] = Field(
-        default_factory=lambda: ["india", "apac", "global", "unknown"]
+        default_factory=lambda: ["india", "apac", "global"]
     )
     exclude_scopes: list[str] = Field(
-        default_factory=lambda: ["us_only", "uk_only", "eu_only", "canada_only"]
+        default_factory=lambda: [
+            "us_only", "uk_only", "eu_only", "emea_only", "canada_only", "other_restricted",
+        ]
     )
 
 
@@ -124,7 +126,7 @@ class WorkAuthFilters(BaseModel):
 
 
 class Filters(BaseModel):
-    version: int = 1
+    version: int = 2
     titles: TitleFilters = Field(default_factory=TitleFilters)
     experience: ExperienceFilters = Field(default_factory=ExperienceFilters)
     locations: LocationFilters = Field(default_factory=LocationFilters)
@@ -163,7 +165,7 @@ class EmploymentAdjustments(BaseModel):
 
 
 class RankingConfig(BaseModel):
-    version: int = 1
+    version: int = 2
     weights: Weights = Field(default_factory=Weights)
     yoe_adjustments: YoeAdjustments = Field(default_factory=YoeAdjustments)
     employment_adjustments: EmploymentAdjustments = Field(default_factory=EmploymentAdjustments)

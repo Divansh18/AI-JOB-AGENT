@@ -23,6 +23,9 @@ TITLE_CASES = [
     ("Machine Learning Engineer", TitleTier.AI, False),
     ("Forward Deployed Engineer", TitleTier.AI, False),
     ("Data Engineer", TitleTier.ADJACENT, False),
+    ("SDK Engineer - JavaScript", TitleTier.STACK, False),
+    ("Associate Infrastructure Engineer", TitleTier.ADJACENT, False),
+    ("Performance Engineer - Benchmarking", TitleTier.ADJACENT, False),
     # senior variants: tier is preserved, seniority flag is what excludes
     ("Senior Software Engineer", TitleTier.CORE_SWE, True),
     ("Sr. Backend Engineer", TitleTier.STACK, True),
@@ -43,6 +46,26 @@ TITLE_CASES = [
     ("Product Manager", TitleTier.EXCLUDED, True),
     ("Technical Recruiter", TitleTier.EXCLUDED, False),
     ("Business Analyst", TitleTier.EXCLUDED, False),
+    ("Intermediate Support Engineer", TitleTier.EXCLUDED, False),
+    ("Customer Experience Engineer, L1", TitleTier.EXCLUDED, False),
+    ("Developer Relations Engineer", TitleTier.EXCLUDED, False),
+    ("AI Field Engineer - Enterprise", TitleTier.EXCLUDED, False),
+    ("Value Solutions Engineer (Inside Presales - America Region)", TitleTier.EXCLUDED, False),
+    ("Solution Engineering", TitleTier.EXCLUDED, False),
+    ("Solution Engineer - Insurance & Asset Management", TitleTier.EXCLUDED, False),
+    ("Service Desk Specialist", TitleTier.EXCLUDED, False),
+    ("Strategy and Operations Associate", TitleTier.EXCLUDED, False),
+    ("Associate - Monetisation", TitleTier.EXCLUDED, False),
+    ("Accounts Payable, Spend Management Coordinator", TitleTier.EXCLUDED, False),
+    ("Analyst (Supply Analytics, Bangkok-based, Relocation provided)", TitleTier.EXCLUDED, False),
+    ("PPSL- Product Management- Devices", TitleTier.EXCLUDED, False),
+    ("Deal Desk", TitleTier.EXCLUDED, False),
+    ("Intern - Admin and Operations", TitleTier.EXCLUDED, False),
+    ("Product Research Specialist (W from Groww)", TitleTier.EXCLUDED, False),
+    ("Language Expert - Taiwan (Bangkok Based)", TitleTier.EXCLUDED, False),
+    ("Creative Sourcer", TitleTier.EXCLUDED, False),
+    ("growth and business - max and wallet", TitleTier.EXCLUDED, False),
+    ("Workplace & Engagement Coordinator", TitleTier.EXCLUDED, False),
 ]
 
 
@@ -65,6 +88,20 @@ def test_early_career_signals():
     for title in ["Graduate Engineer", "Associate Software Engineer", "SDE 1",
                   "Software Engineer - New Grad", "Junior Backend Developer"]:
         assert classify_title(normalize_title(title)).early_career_signal, title
+
+
+def test_engineering_titles_with_business_context_are_not_excluded():
+    for title, tier in [
+        ("Product Engineer - Manufacturing Operations", TitleTier.CORE_SWE),
+        ("Software Engineer, Monetization", TitleTier.CORE_SWE),
+        ("Software Engineer, Growth", TitleTier.CORE_SWE),
+        ("Software Engineer, Analytics Platform", TitleTier.CORE_SWE),
+        ("Research Software Engineer", TitleTier.CORE_SWE),
+        ("Associate Infrastructure Engineer", TitleTier.ADJACENT),
+        ("Business Systems Developer", TitleTier.AMBIGUOUS),
+    ]:
+        analysis = classify_title(normalize_title(title))
+        assert analysis.tier == tier, title
 
 
 @pytest.mark.parametrize("raw,canonical", [
