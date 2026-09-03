@@ -1,0 +1,180 @@
+# Second discovery pass.
+Anthropic
+OpenAI
+Scale
+Sierra AI
+Harvey
+Abridge
+Glean
+Writer
+Adept
+Imbue
+Cresta
+Assembly AI
+Deepgram
+Speechmatics
+Rasa
+Snorkel AI
+Arize AI
+WhyLabs
+Weights and Biases
+Comet ML
+Neptune AI
+Galileo
+Humanloop
+Braintrust Data
+Langfuse
+Helicone
+Portkey
+Vellum
+Freeplay
+Log10
+Zilliz
+Milvus
+LanceDB
+Marqo
+Vespa
+Jina AI
+Voyage AI
+Nomic AI
+Contextual AI
+Vectara
+Unstructured
+LlamaCloud
+Fixie
+Lindy
+Relevance AI
+Dust
+Cognition
+Magic dev
+Poolside
+Codeium
+Tabnine
+Sweep
+Cursor
+Zed Industries
+Warp
+Fig
+Raycast
+Arc Browser
+Superhuman
+Height
+Shortcut
+Sleuth
+LaunchDarkly
+Split
+Statsig
+Amplitude Analytics
+Heap
+FullStory
+LogRocket
+Bugsnag
+Rollbar
+Honeybadger
+Better Stack
+Checkly
+Cronitor
+Pagerduty
+Incident io
+FireHydrant
+Rootly
+Blameless
+Temporal
+Inngest
+Trigger dev
+Hatchet
+Windmill
+n8n
+Retool
+Appsmith
+Budibase
+Tooljet
+Baserow
+NocoDB
+Directus
+Hygraph
+Payload CMS
+Keystone
+Medusa
+Saleor
+Commerce Layer
+Swell
+Vendure
+Spryker
+Fabric
+Nacelle
+Shogun
+Chord
+Bolt
+Fast
+Primer
+Highnote
+Lithic
+Unit
+Treasury Prime
+Column
+Increase
+Modern Treasury
+Moov
+Finix
+Payabli
+Spreedly
+Basis Theory
+VGS
+Alloy
+Persona
+Middesk
+Sardine
+Sift
+Unit21
+Hummingbird
+Socure
+Prove
+Trulioo
+Veriff
+Sumsub
+Onfido
+Jumio
+Entrust
+Clear
+IDnow
+Signicat
+Yoti
+Berbix
+Withpersona
+Cybrilla
+Smallcase
+Wint Wealth
+Dezerv
+Stable Money
+Fisdom
+INDmoney
+Kuvera
+Scripbox
+Piggy
+Tarrakki
+Jar
+Fello
+Multipl
+Gullak
+Deciml
+Grip Invest
+Tap Invest
+Altifi
+Wintwealth
+Vested Finance
+Stockal
+Winvesta
+Appreciate
+IND Money
+Angel One
+Upstox
+Dhan
+Fyers
+Alice Blue
+Motilal Oswal
+ICICI Direct
+Sharekhan
+IIFL
+5paisa
+Paytm Money

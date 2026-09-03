@@ -1,0 +1,1325 @@
+version: 1
+companies:
+- name: Abridge
+  ats: ashby
+  token: abridge
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 41 postings; e.g. Machine Learning Scientist (All Levels)'
+- name: Adyen
+  ats: greenhouse
+  token: adyen
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 224 postings; e.g. Account Manager'
+- name: Affirm
+  ats: greenhouse
+  token: affirm
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 197 postings; e.g. Administrative Assistant IV'
+- name: Agoda
+  ats: greenhouse
+  token: agoda
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 287 postings; e.g. 2026 - RTA - Lead Manager/Associate Director - Project Manag'
+- name: Airbnb
+  ats: greenhouse
+  token: airbnb
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 169 postings; e.g. Acquisition Manager'
+- name: Airtable
+  ats: greenhouse
+  token: airtable
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 16 postings; e.g. Account Executive, Strategic Accounts'
+- name: Alchemy
+  ats: ashby
+  token: alchemy
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 22 postings; e.g. Cloud Infrastructure Engineer '
+- name: Algolia
+  ats: greenhouse
+  token: algolia
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 31 postings; e.g. Account Manager - Dutch speaking '
+- name: Alloy
+  ats: greenhouse
+  token: alloy
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 22 postings; e.g. Account Executive, Banking & Credit Unions'
+- name: Amplitude
+  ats: greenhouse
+  token: amplitude
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 35 postings; e.g. Emerging Account Executive (India)'
+- name: Anchorage Digital
+  ats: lever
+  token: anchorage
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 29 postings; e.g. APAC Regional Lead, Stablecoin Solutions'
+- name: Andela
+  ats: ashby
+  token: andela
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 18 postings; e.g. Staff Fullstack Engineer'
+- name: Anthropic
+  ats: greenhouse
+  token: anthropic
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 577 postings; e.g. Account Executive, AI Native'
+- name: Anyscale
+  ats: lever
+  token: anyscale
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 1 postings; e.g. We have moved our Careers Page to: https://jobs.ashbyhq.com/'
+- name: Arize AI
+  ats: greenhouse
+  token: arizeai
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 28 postings; e.g. AI Application Engineer, APJ'
+- name: Asana
+  ats: greenhouse
+  token: asana
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 118 postings; e.g. Analytical Engineer'
+- name: Ashby
+  ats: ashby
+  token: ashby
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 67 postings; e.g. Engineering Manager - EU'
+- name: Assembly AI
+  ats: greenhouse
+  token: assemblyai
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 20 postings; e.g. Commercial Counsel'
+- name: Atlan
+  ats: ashby
+  token: atlan
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 5 postings; e.g. Senior Security Engineer - Corporate Security'
+- name: Baseten
+  ats: ashby
+  token: baseten
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 83 postings; e.g. Software Engineer - Dedicated Inference'
+- name: Basis Theory
+  ats: lever
+  token: basis
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 3 postings; e.g. Integrated Client Solutions Director'
+- name: Bounce
+  ats: ashby
+  token: bounce
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 7 postings; e.g. Full Stack Engineer '
+- name: Braintrust
+  ats: ashby
+  token: braintrust
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 25 postings; e.g. Sales Development Representative'
+- name: Brex
+  ats: greenhouse
+  token: brex
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 292 postings; e.g. Account Executive, Small Business'
+- name: Brilliant
+  ats: lever
+  token: brilliant
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 4 postings; e.g. CS Learning Designer'
+- name: Buffer
+  ats: ashby
+  token: buffer
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 3 postings; e.g. Senior Growth Engineer'
+- name: Calendly
+  ats: greenhouse
+  token: calendly
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 11 postings; e.g. Director, Brand Influence, Advocacy & AI Discovery'
+- name: Checkly
+  ats: ashby
+  token: checkly
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 3 postings; e.g. Don''t see the role you''re looking for? Join our Talent Commu'
+- name: Chime
+  ats: greenhouse
+  token: chime
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 63 postings; e.g. Analyst, Investor Relations'
+- name: Circle
+  ats: ashby
+  token: circle
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 9 postings; e.g. Senior Brand Designer'
+- name: Clear
+  ats: greenhouse
+  token: clear
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 32 postings; e.g. Business Development Representative, Healthcare'
+- name: ClickHouse
+  ats: ashby
+  token: clickhouse
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 178 postings; e.g. Senior Cloud Software Engineer - Efficiency Engineering'
+- name: ClickUp
+  ats: ashby
+  token: clickup
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 67 postings; e.g. Staff Backend Engineer, Hierarchy'
+- name: CoderPad
+  ats: lever
+  token: coderpad
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 6 postings; e.g. Commercial Account Executive - SMB - (French/English)'
+- name: Cognition
+  ats: ashby
+  token: cognition
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 91 postings; e.g. General Application - Cognition'
+- name: Cohere
+  ats: ashby
+  token: cohere
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 139 postings; e.g. Member of Technical Staff, Modeling'
+- name: Coinbase
+  ats: greenhouse
+  token: coinbase
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 190 postings; e.g. Accountant, Cyprus'
+- name: Column
+  ats: ashby
+  token: column
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 19 postings; e.g. I don''t fit into any of these roles!'
+- name: Comet ML
+  ats: greenhouse
+  token: comet
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 3 postings; e.g. DevRel'
+- name: Confluent
+  ats: ashby
+  token: confluent
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 23 postings; e.g. Distributed Systems Software Engineer - WarpStream '
+- name: ConsenSys
+  ats: greenhouse
+  token: consensys
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 6 postings; e.g. Product Marketing Lead - Trade'
+- name: Contra
+  ats: ashby
+  token: contra
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 5 postings; e.g. Strategic Project Lead'
+- name: Coursera
+  ats: greenhouse
+  token: coursera
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 22 postings; e.g. Account Director, Education'
+- name: CRED
+  ats: lever
+  token: cred
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 14 postings; e.g. area collections manager bangalore -flows'
+- name: Cresta
+  ats: greenhouse
+  token: cresta
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 94 postings; e.g. Accountant'
+- name: Cursor
+  ats: ashby
+  token: cursor
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 119 postings; e.g. Software Engineer, Growth '
+- name: Databricks
+  ats: greenhouse
+  token: databricks
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 860 postings; e.g. ソリューションアーキテクト (プリセールス)'
+- name: DataCamp
+  ats: greenhouse
+  token: datacamp
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 32 postings; e.g. Commercial Counsel'
+- name: Datadog
+  ats: greenhouse
+  token: datadog
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 441 postings; e.g. AI Research Engineer - Datadog AI Research (DAIR)'
+- name: Deepgram
+  ats: ashby
+  token: deepgram
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 90 postings; e.g. Pre-Sales Solutions Engineer (EST or PST)'
+- name: Descript
+  ats: greenhouse
+  token: descript
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 8 postings; e.g. Account Executive'
+- name: Discord
+  ats: greenhouse
+  token: discord
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 51 postings; e.g. Account Manager, Advertising Solutions'
+- name: Druva
+  ats: greenhouse
+  token: druva
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 42 postings; e.g. Account Executive, Endpoints'
+- name: Duolingo
+  ats: greenhouse
+  token: duolingo
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 86 postings; e.g. Ad Sales Lead, Central'
+- name: Dust
+  ats: ashby
+  token: dust
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 23 postings; e.g. Account Executive'
+- name: Educative
+  ats: lever
+  token: educative
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 11 postings; e.g. Community Manager'
+- name: Elastic
+  ats: greenhouse
+  token: elastic
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 343 postings; e.g. ABM Manager, Global Public Sector'
+- name: ElevenLabs
+  ats: ashby
+  token: elevenlabs
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 252 postings; e.g. Account Manager - India '
+- name: Fig
+  ats: ashby
+  token: fig
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 1 postings; e.g. Test job'
+- name: Figma
+  ats: greenhouse
+  token: figma
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 161 postings; e.g. Account Executive, Emerging Enterprise (Berlin, Germany)'
+- name: Finix
+  ats: lever
+  token: finix
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 15 postings; e.g. Business Operations Analyst'
+- name: Fireblocks
+  ats: greenhouse
+  token: fireblocks
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 69 postings; e.g. Associate General Counsel, Crypto Services'
+- name: Fireworks AI
+  ats: ashby
+  token: fireworks
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 66 postings; e.g. AI Product Engineer - Nexus'
+- name: FullStory
+  ats: ashby
+  token: fullstory
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 3 postings; e.g. Senior IT Systems Engineer'
+- name: Galileo
+  ats: greenhouse
+  token: galileo
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 12 postings; e.g. Creative Hospitality'
+- name: Gemini
+  ats: greenhouse
+  token: gemini
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 40 postings; e.g. Associate Director, Customer Support (Operations Center)'
+- name: Ghost
+  ats: greenhouse
+  token: ghost
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 4 postings; e.g. Chief of Staff'
+- name: GitLab
+  ats: greenhouse
+  token: gitlab
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 220 postings; e.g. Account Executive - Italy'
+- name: Greenhouse
+  ats: greenhouse
+  token: greenhouse
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 19 postings; e.g. Commercial Counsel'
+- name: Groww
+  ats: greenhouse
+  token: groww
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 5 postings; e.g. Associate - Content (Digest)'
+- name: Gusto
+  ats: greenhouse
+  token: gusto
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 94 postings; e.g. 401(k) Onboarding Advocate'
+- name: HackerRank
+  ats: greenhouse
+  token: hackerrank
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 30 postings; e.g. Account Executive - Strategic'
+- name: Harvey
+  ats: ashby
+  token: harvey
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 339 postings; e.g. Customer Success Manager, Mid-Market, EMEA'
+- name: Highnote
+  ats: greenhouse
+  token: highnote
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 4 postings; e.g. Senior Account Executive - Acquiring'
+- name: IDnow
+  ats: greenhouse
+  token: idnow
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 9 postings; e.g. Communication Marketing Manager (f/m/d) '
+- name: Imbue
+  ats: greenhouse
+  token: imbue
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 3 postings; e.g. Founding Product Marketer'
+- name: Incident io
+  ats: ashby
+  token: incident
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 20 postings; e.g. Enterprise Customer Success Manager'
+- name: Inngest
+  ats: ashby
+  token: inngest
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 1 postings; e.g. Distributed Systems Engineer - Platform'
+- name: Jumio
+  ats: greenhouse
+  token: jumio
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 30 postings; e.g. Account Executive, APAC'
+- name: Justworks
+  ats: greenhouse
+  token: justworks
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 102 postings; e.g. Account Development Executive'
+- name: Karat
+  ats: greenhouse
+  token: karat
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 9 postings; e.g. Community Engineer (SWE3), Brilliant Black Minds (United Sta'
+- name: Keystone
+  ats: greenhouse
+  token: keystone
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 33 postings; e.g. Associates and Consultants (2026 Graduates)'
+- name: Labelbox
+  ats: greenhouse
+  token: labelbox
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 10 postings; e.g. Accounts Payable, Spend Management Coordinator'
+- name: LanceDB
+  ats: ashby
+  token: lancedb
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 12 postings; e.g. Senior Product Manager'
+- name: LangChain
+  ats: ashby
+  token: langchain
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 103 postings; e.g. Python OSS Engineer '
+- name: Langfuse
+  ats: ashby
+  token: langfuse
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 7 postings; e.g. Senior Backend Engineer (Data Infrastructure)'
+- name: LaunchDarkly
+  ats: greenhouse
+  token: launchdarkly
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 49 postings; e.g. Backend Engineer, Flag Delivery'
+- name: Ledger
+  ats: lever
+  token: ledger
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 1 postings; e.g. Local Market Outreach - Australia'
+- name: Linear
+  ats: ashby
+  token: linear
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 28 postings; e.g. Senior / Staff Fullstack Engineer'
+- name: Lithic
+  ats: greenhouse
+  token: lithic
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 5 postings; e.g. Business Operations Associate, Program Management'
+- name: LlamaIndex
+  ats: ashby
+  token: llamaindex
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 14 postings; e.g. Member of Technical Staff, Frontend Product'
+- name: LogRocket
+  ats: lever
+  token: logrocket
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 6 postings; e.g. Developer Relations'
+- name: MasterClass
+  ats: greenhouse
+  token: masterclass
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 3 postings; e.g. AI Project Reviewer (CONTRACT)'
+- name: Meesho
+  ats: lever
+  token: meesho
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 46 postings; e.g. AM/ Manager - Risk & Decision Science'
+- name: Mercury
+  ats: greenhouse
+  token: mercury
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 54 postings; e.g. Account Executive'
+- name: Middesk
+  ats: ashby
+  token: middesk
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 21 postings; e.g. Software Engineer'
+- name: MindTickle
+  ats: lever
+  token: mindtickle
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 17 postings; e.g. Business Development Representative- 1'
+- name: Miro
+  ats: ashby
+  token: miro
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 37 postings; e.g. Director Product Design'
+- name: Mixpanel
+  ats: greenhouse
+  token: mixpanel
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 83 postings; e.g. Account Executive, DACH '
+- name: Modal
+  ats: ashby
+  token: modal
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 31 postings; e.g. Member of Technical Staff - Systems'
+- name: Modern Treasury
+  ats: ashby
+  token: moderntreasury
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 8 postings; e.g. Software Engineer '
+- name: MongoDB
+  ats: greenhouse
+  token: mongodb
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 398 postings; e.g. Account Development Representative'
+- name: Monzo
+  ats: greenhouse
+  token: monzo
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 65 postings; e.g. Anaplan Support Analyst'
+- name: N26
+  ats: greenhouse
+  token: n26
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 67 postings; e.g. AFC Intern - Spanish Market'
+- name: n8n
+  ats: ashby
+  token: n8n
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 37 postings; e.g. Sales Development Representative DACH (German speaker)'
+- name: Navi
+  ats: ashby
+  token: navi
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 9 postings; e.g. Founding Software Engineer'
+- name: Neon
+  ats: lever
+  token: neon
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 12 postings; e.g. Analista de Growth (Business Analytics) - Pleno'
+- name: Neptune AI
+  ats: ashby
+  token: neptune
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 5 postings; e.g. Founding Engineer '
+- name: Netlify
+  ats: greenhouse
+  token: netlify
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 2 postings; e.g. Staff Product Manager (Accounts & Billing)'
+- name: Netskope
+  ats: greenhouse
+  token: netskope
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 143 postings; e.g. AI Agent Developer'
+- name: New Relic
+  ats: greenhouse
+  token: newrelic
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 53 postings; e.g.  Account Executive - Enterprise Sales'
+- name: Newton School
+  ats: greenhouse
+  token: newton
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 1 postings; e.g. Senior Account Strategist'
+- name: Nomic AI
+  ats: ashby
+  token: nomic
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 5 postings; e.g. Data Scientist/Data Engineer (Mid to Sr Levels)'
+- name: Notion
+  ats: ashby
+  token: notion
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 134 postings; e.g. Software Engineer, Developer Platform'
+- name: Observe AI
+  ats: greenhouse
+  token: observeai
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 17 postings; e.g. AI Agent Engineer'
+- name: OpenAI
+  ats: ashby
+  token: openai
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 770 postings; e.g. Technical Program Manager, Compute Infrastructure'
+- name: Oyster HR
+  ats: ashby
+  token: oyster
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 26 postings; e.g. Customer Success Manager (EMEA)'
+- name: Pagerduty
+  ats: greenhouse
+  token: pagerduty
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 45 postings; e.g. Account Manager- DC'
+- name: Payabli
+  ats: ashby
+  token: payabli
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 10 postings; e.g. Senior Solutions Engineer'
+- name: Paytm
+  ats: lever
+  token: paytm
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 200 postings; e.g. Account Executive/ Director - AI Agentic Enterprise Sales'
+- name: Perplexity
+  ats: ashby
+  token: perplexity
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 100 postings; e.g. Product Marketing Manager, Partnerships'
+- name: Persona
+  ats: ashby
+  token: persona
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 16 postings; e.g. Associate Commercial Counsel '
+- name: Pinecone
+  ats: ashby
+  token: pinecone
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 6 postings; e.g. Senior/Staff Software Engineer, Database Team'
+- name: Plaid
+  ats: ashby
+  token: plaid
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 102 postings; e.g. Strategic Initiatives'
+- name: PlanetScale
+  ats: greenhouse
+  token: planetscale
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 12 postings; e.g. Customer Support Engineer'
+- name: Poolside
+  ats: ashby
+  token: poolside
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 15 postings; e.g. Member of Engineering (Pre-training / Data Research)'
+- name: Porter
+  ats: lever
+  token: porter
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 28 postings; e.g. 1099 Nurse Practitioner (Hampden County)'
+- name: PostHog
+  ats: ashby
+  token: posthog
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 11 postings; e.g. Technical Account Executive - EMEA'
+- name: Postman
+  ats: greenhouse
+  token: postman
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 66 postings; e.g. Account Development Representative'
+- name: Primer
+  ats: ashby
+  token: primer
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 23 postings; e.g. Software Engineer, Full-Stack'
+- name: Prismic
+  ats: lever
+  token: prismic
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 7 postings; e.g. Account Executive'
+- name: Prove
+  ats: greenhouse
+  token: prove
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 10 postings; e.g. Data Science Lead'
+- name: Railway
+  ats: ashby
+  token: railway
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 8 postings; e.g. Senior Full-Stack Engineer - Product'
+- name: Ramp
+  ats: ashby
+  token: ramp
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 138 postings; e.g.  Security Engineer, Cloud'
+- name: Rasa
+  ats: ashby
+  token: rasa
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 3 postings; e.g. Customer Success Manager'
+- name: Redis
+  ats: ashby
+  token: redis
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 18 postings; e.g. Regional Account Executive'
+- name: Relevance AI
+  ats: ashby
+  token: relevanceai
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 10 postings; e.g. Customer Success Manager - Barcelona '
+- name: Remote
+  ats: greenhouse
+  token: remote
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 2 postings; e.g. SEI Instructor Lead'
+- name: Render
+  ats: ashby
+  token: render
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 33 postings; e.g. Open Application'
+- name: Ripple
+  ats: greenhouse
+  token: ripple
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 131 postings; e.g. Brand Designer'
+- name: Robinhood
+  ats: greenhouse
+  token: robinhood
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 131 postings; e.g. Account Maintenance Associate'
+- name: Rubrik
+  ats: greenhouse
+  token: rubrik
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 133 postings; e.g. Account Executive '
+- name: Runway
+  ats: ashby
+  token: runway
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 4 postings; e.g. ⚙️ Senior/Staff Platform Engineer'
+- name: Sanity
+  ats: ashby
+  token: sanity
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 27 postings; e.g. Senior Solution Architect (US/Canada)'
+- name: Sardine
+  ats: ashby
+  token: sardine
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 38 postings; e.g. Strategic Account Executive'
+- name: Scale AI
+  ats: greenhouse
+  token: scaleai
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 211 postings; e.g. AI Advisory Consultant'
+- name: Sentry
+  ats: ashby
+  token: sentry
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 40 postings; e.g. Staff Machine Learning Engineer, AI'
+- name: Sierra AI
+  ats: ashby
+  token: sierra
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 211 postings; e.g. Enterprise Sales Engineer'
+- name: Sift
+  ats: ashby
+  token: sift
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 9 postings; e.g. Senior Engineering Manager, ML Platform'
+- name: Slice
+  ats: greenhouse
+  token: slice
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 26 postings; e.g. Associate Account Manager'
+- name: Snorkel AI
+  ats: greenhouse
+  token: snorkelai
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 38 postings; e.g. Accounting Manager, Technical Accounting & Financial Reporti'
+- name: Snowflake
+  ats: ashby
+  token: snowflake
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 381 postings; e.g. Lead, Strategic Finance - Deals (International)'
+- name: Socure
+  ats: ashby
+  token: socure
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 85 postings; e.g. Senior Solution Consultant – Post-Sales, Platform'
+- name: Speechmatics
+  ats: greenhouse
+  token: speechmatics
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 8 postings; e.g. Forward Deployed Engineer'
+- name: SpotDraft
+  ats: ashby
+  token: spotdraft
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 10 postings; e.g. Software Development Engineer III | Backend'
+- name: Spreedly
+  ats: lever
+  token: spreedly
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 6 postings; e.g. Business AI Operations Specialist'
+- name: Spryker
+  ats: greenhouse
+  token: spryker
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 2 postings; e.g. Senior IT Engineer (m/f/d)'
+- name: Squarespace
+  ats: greenhouse
+  token: squarespace
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 24 postings; e.g. Business Development Manager, AI Discoverability and Schedul'
+- name: Stable Money
+  ats: ashby
+  token: stable
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 5 postings; e.g. Mail Processing Specialist (Independent Contractor)'
+- name: Storyblok
+  ats: greenhouse
+  token: storyblok
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 15 postings; e.g. Deal Operations Manager - Canada, Europe'
+- name: Stripe
+  ats: greenhouse
+  token: stripe
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 591 postings; e.g. Account Executive, AI Sales'
+- name: Supabase
+  ats: ashby
+  token: supabase
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 59 postings; e.g. Product Manager - Marketplace'
+- name: Sweep
+  ats: ashby
+  token: sweep
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 7 postings; e.g. Sales Development Representative'
+- name: Synthesia
+  ats: ashby
+  token: synthesia
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 60 postings; e.g. SecOps Security Engineer (Staff-level, L6) '
+- name: Tekion
+  ats: ashby
+  token: tekion
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 101 postings; e.g. Staff Product Manager'
+- name: Temporal
+  ats: ashby
+  token: temporal
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 61 postings; e.g. Senior Account Executive, New Logo'
+- name: Together AI
+  ats: greenhouse
+  token: togetherai
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 58 postings; e.g. AI infrastructure System Engineer Bangalore '
+- name: Toptal
+  ats: lever
+  token: toptal
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 20 postings; e.g. CEO, AI Services - US-Based'
+- name: Trigger dev
+  ats: ashby
+  token: triggerdev
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 1 postings; e.g. Technical Content Engineer'
+- name: Trulioo
+  ats: ashby
+  token: trulioo
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 42 postings; e.g. Enterprise Account Executive (EMEA)'
+- name: Turing
+  ats: greenhouse
+  token: turing
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 25 postings; e.g. Chief of Staff (CEO''s Office)'
+- name: Twilio
+  ats: greenhouse
+  token: twilio
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 136 postings; e.g. Account Executive 4'
+- name: Typeform
+  ats: greenhouse
+  token: typeform
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 12 postings; e.g. Customer Success Manager'
+- name: Udemy
+  ats: greenhouse
+  token: udemy
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 14 postings; e.g. Commercial Account Executive (French Speaking)'
+- name: Unit
+  ats: ashby
+  token: unit
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 4 postings; e.g. Senior Backend Engineer'
+- name: Unstructured
+  ats: ashby
+  token: unstructured
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 5 postings; e.g. Join us - Evergreen Opportunities'
+- name: Upwork
+  ats: greenhouse
+  token: upwork
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 7 postings; e.g. Chief of Staff to GM & Chief Operating Officer'
+- name: Vercel
+  ats: greenhouse
+  token: vercel
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 88 postings; e.g. Account Executive, Commercial'
+- name: Veriff
+  ats: greenhouse
+  token: veriff
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 11 postings; e.g. AP Accountant (Parental Leave Cover)'
+- name: Warp
+  ats: greenhouse
+  token: warp
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 5 postings; e.g. Expansion Account Manager'
+- name: Weaviate
+  ats: ashby
+  token: weaviate
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 1 postings; e.g. Director of Product'
+- name: Webflow
+  ats: greenhouse
+  token: webflow
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 31 postings; e.g. Account Executive, EMEA (Germany)'
+- name: Wise
+  ats: greenhouse
+  token: wise
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 21 postings; e.g. Supplemental Sales Agent - Anchorage, AK'
+- name: Writer
+  ats: ashby
+  token: writer
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 51 postings; e.g. Software engineer, generative AI'
+- name: Zapier
+  ats: ashby
+  token: zapier
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 7 postings; e.g. Sales Assist Representative'
+- name: Zed Industries
+  ats: ashby
+  token: zed
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 2 postings; e.g. Open Source Engineer'
+- name: Zenoti
+  ats: greenhouse
+  token: zenoti
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 47 postings; e.g. Account Manager - Expansion Sales(B2B SaaS, Dallas)'
+- name: Zeta
+  ats: lever
+  token: zeta
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 21 postings; e.g. Cloud Network Engineer II'
+- name: Zilliz
+  ats: lever
+  token: zilliz
+  priority: normal
+  active: true
+  verified_at: '2026-09-02'
+  notes: 'verified: 14 postings; e.g. Enterprise Account Executive - Japan'

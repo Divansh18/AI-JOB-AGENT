@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Job digest {{ d.digest_date }}</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#14171a;--muted:#5b6570;--line:#e2e6ea;--accent:#1a5fd0;
+--good:#0f7b3f;--warn:#a86500;--bad:#b3261e;--chip:#eef2f7;--chipf:#f5efe6;}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1216;--card:#171b21;--ink:#e8eaed;--muted:#9aa4b0;
+--line:#262c34;--accent:#7aa7ff;--good:#5fd08a;--warn:#e0a33a;--bad:#ff8a80;--chip:#212832;--chipf:#2a2620;}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:1040px;margin:0 auto;padding:24px 18px 64px}
+h1{font-size:22px;margin:0 0 2px} h2{font-size:15px;margin:32px 0 12px;letter-spacing:.02em;
+text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:6px}
+.sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+.funnel{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 12px;min-width:92px}
+.stat b{display:block;font-size:19px;line-height:1.2} .stat span{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:10px}
+.card-top{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}
+.title{font-size:15px;font-weight:650;margin:0} .title a{color:var(--ink);text-decoration:none}
+.title a:hover{color:var(--accent)}
+.meta{color:var(--muted);font-size:12.5px;margin-top:3px}
+.score{text-align:right;flex-shrink:0} .score b{font-size:20px;display:block;line-height:1}
+.score span{font-size:10.5px;color:var(--muted);text-transform:uppercase}
+.bar{display:flex;height:5px;border-radius:3px;overflow:hidden;margin:9px 0 8px;background:var(--chip)}
+.bar i{display:block}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.chip{background:var(--chip);border-radius:11px;padding:2px 9px;font-size:11.5px;color:var(--muted)}
+.chip.s{color:var(--good);font-weight:600} .chip.f{background:var(--chipf);color:var(--warn)}
+.chip.w{background:var(--chipf);color:var(--warn);font-weight:600}
+.age{font-weight:650;font-size:11.5px;padding:2px 8px;border-radius:11px;background:var(--chip);color:var(--muted)}
+.age.fresh{background:rgba(15,123,63,.14);color:var(--good)}
+.snip{color:var(--muted);font-size:12.5px;margin-top:8px}
+.cmd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;background:var(--chip);
+padding:3px 7px;border-radius:5px;color:var(--muted);display:inline-block;margin-top:9px}
+a.apply{color:var(--accent);text-decoration:none;font-weight:600;font-size:12.5px}
+table{width:100%;border-collapse:collapse;font-size:12.5px;background:var(--card);
+border:1px solid var(--line);border-radius:8px;overflow:hidden}
+th,td{text-align:left;padding:7px 11px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase}
+tr:last-child td{border-bottom:none}
+.empty{color:var(--muted);font-style:italic;padding:10px 0}
+.foot{margin-top:34px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+.foot code{background:var(--chip);padding:2px 6px;border-radius:4px}
+.ok{color:var(--good)} .warn{color:var(--warn)} .bad{color:var(--bad)}
+@media print{body{background:#fff}.card{break-inside:avoid}}
+</style></head><body><div class="wrap">
+
+<h1>Job digest — {{ d.digest_date }}</h1>
+<div class="sub">Generated {{ d.generated_at }} · encoder <code>{{ d.encoder }}</code> · LLM spend to date ₹{{ "%.2f"|format(d.spend_inr) }}</div>
+
+<div class="funnel">
+  <div class="stat"><b>{{ d.counts.jobs_active }}</b><span>tracked</span></div>
+  <div class="stat"><b>{{ d.counts.seen_last_24h }}</b><span>new 24h</span></div>
+  <div class="stat"><b>{{ d.counts.duplicates }}</b><span>dupes merged</span></div>
+  <div class="stat"><b>{{ d.counts.passed_filters }}</b><span>passed filters</span></div>
+  <div class="stat"><b>{{ d.counts.filtered_out }}</b><span>filtered out</span></div>
+  <div class="stat"><b>{{ d.counts.shown }}</b><span>shown</span></div>
+  <div class="stat"><b>{{ d.counts.applications }}</b><span>applications</span></div>
+</div>
+
+{% macro card(c) %}
+<div class="card">
+  <div class="card-top">
+    <div style="flex:1">
+      <p class="title"><a href="{{ c.apply_url }}" target="_blank" rel="noopener">{{ c.title }}</a></p>
+      <div class="meta"><strong>{{ c.company }}</strong> · {{ c.location }} · {{ c.remote_type }} · via {{ c.source }}</div>
+    </div>
+    <div class="score"><b>{{ c.score }}</b><span>score</span>
+      <div style="margin-top:5px"><span class="age {% if c.age_hours < 24 %}fresh{% endif %}">{% if c.age_hours < 24 %}{{ c.age_hours|round|int }}h{% else %}{{ (c.age_hours/24)|round|int }}d{% endif %}</span></div>
+    </div>
+  </div>
+  <div class="bar">
+    {% for k, col in [('semantic','#1a5fd0'),('title','#0f7b3f'),('freshness','#a86500'),('location','#7a3fd0'),('skills','#0f9b8e'),('priority','#888')] %}
+      {% if c.components.get(k, 0) > 0 %}<i style="width:{{ c.components[k] }}%;background:{{ col }}"></i>{% endif %}
+    {% endfor %}
+  </div>
+  <div class="chips">
+    {% for s in c.matched_strong[:8] %}<span class="chip s">{{ s }}</span>{% endfor %}
+    {% for s in c.matched_familiar[:4] %}<span class="chip f">{{ s }}~</span>{% endfor %}
+    {% if c.yoe_summary %}<span class="chip w">{{ c.yoe_summary }}</span>{% endif %}
+    {% for f in c.flags %}<span class="chip w">{{ f }}</span>{% endfor %}
+    {% if c.employment_type != 'full_time' %}<span class="chip">{{ c.employment_type }}</span>{% endif %}
+  </div>
+  <div class="snip">{{ c.snippet }}</div>
+  <div><span class="cmd">jobsearch apply {{ c.job_id }}</span>
+   &nbsp;<a class="apply" href="{{ c.apply_url }}" target="_blank" rel="noopener">Open posting →</a></div>
+</div>
+{% endmacro %}
+
+<h2>New — top {{ d.new_today|length }}</h2>
+{% if d.new_today %}{% for c in d.new_today %}{{ card(c) }}{% endfor %}
+{% else %}<p class="empty">Nothing new. Run <code>jobsearch pipeline run</code>.</p>{% endif %}
+
+<h2>Aging shortlist — high score, not yet applied</h2>
+{% if d.aging %}{% for c in d.aging %}{{ card(c) }}{% endfor %}
+{% else %}<p class="empty">Nothing aging.</p>{% endif %}
+
+<h2>Needs your action</h2>
+{% if d.needs_action %}
+<table><tr><th>App</th><th>Role</th><th>Company</th><th>Status</th><th>Since</th></tr>
+{% for a in d.needs_action %}<tr><td>#{{ a.application_id }}</td><td>{{ a.title }}</td>
+<td>{{ a.company }}</td><td>{{ a.status }}</td><td>{{ a.updated_at[:10] }}</td></tr>{% endfor %}</table>
+{% else %}<p class="empty">No follow-ups due.</p>{% endif %}
+
+<h2>Pipeline health</h2>
+<table><tr><th>Source</th><th>Fetched</th><th>New</th><th>Errors</th><th>Last run</th></tr>
+{% for s in d.source_health %}<tr><td>{{ s.source_name }}</td><td>{{ s.fetched or 0 }}</td>
+<td>{{ s.new_jobs or 0 }}</td><td class="{% if s.errors %}warn{% endif %}">{{ s.errors or 0 }}</td>
+<td>{{ (s.last_run or '-')[:16] }}</td></tr>{% endfor %}</table>
+<div class="sub" style="margin-top:8px">
+  {{ d.company_health.active }} active companies ({% for k,v in d.company_health.by_ats.items() %}{{ k }} {{ v }}{% if not loop.last %} · {% endif %}{% endfor %})
+  {% if d.company_health.failing %} · <span class="warn">{{ d.company_health.failing|length }} failing</span>{% endif %}
+</div>
+
+<h2>Filtered-out spot check</h2>
+<div class="sub">Random sample of excluded jobs. If good roles appear here, the filters are too tight.</div>
+<table><tr><th>ID</th><th>Title</th><th>Company</th><th>Excluded by</th></tr>
+{% for r in d.rejected_sample %}<tr><td>{{ r.id }}</td><td>{{ r.title }}</td>
+<td>{{ r.company }}</td><td>{{ r.rules|join(', ') }}</td></tr>{% endfor %}</table>
+{% if d.filter_histogram %}
+<div class="sub" style="margin-top:8px">Rule hits: {% for k,v in d.filter_histogram.items() %}{{ k }} ({{ v }}){% if not loop.last %} · {% endif %}{% endfor %}</div>
+{% endif %}
+
+<div class="foot">
+<code>jobsearch pipeline run</code> refresh ·
+<code>jobsearch jobs show &lt;id&gt;</code> full JD ·
+<code>jobsearch apply &lt;id&gt;</code> record ·
+<code>jobsearch status &lt;id&gt; recruiter_reply</code> update ·
+<code>jobsearch jobs dismiss &lt;id&gt; --reason "..."</code>
+</div>
+</div></body></html>

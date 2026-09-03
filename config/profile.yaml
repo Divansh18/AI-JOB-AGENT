@@ -1,0 +1,86 @@
+# Phase 0 profile: PREFERENCES AND SKILLS ONLY.
+#
+# This file deliberately contains no numeric years-of-experience value and no
+# employment claims. Experience is described as a stage. Exact employment and
+# project dates, with evidence, belong in the verified Truth Store (Phase 1).
+#
+# Nothing in this file is ever used to generate text about the candidate. It is
+# used for matching and filtering only.
+
+experience_stage: early_career
+
+target_roles:
+  - Software Engineer
+  - Software Developer
+  - SDE 1
+  - Associate Software Engineer
+  - Graduate Software Engineer
+  - Full Stack Engineer
+  - Full Stack Developer
+  - Backend Engineer
+  - Backend Developer
+  - Frontend Engineer
+  - Frontend Developer
+  - AI Engineer
+  - Applied AI Engineer
+
+skills:
+  # Production-level working knowledge.
+  strong:
+    - JavaScript
+    - TypeScript
+    - Python
+    - SQL
+    - React.js
+    - Next.js
+    - Node.js
+    - Express.js
+    - NestJS
+    - FastAPI
+    - REST APIs
+    - PostgreSQL
+    - MySQL
+    - MongoDB
+    - Git
+    - GitHub
+    - Docker
+    - Linux
+  # Developing familiarity. Weighted lower in ranking and never presented as
+  # equivalent to the list above.
+  familiar:
+    - WebSockets
+    - OAuth 2.0
+    - JWT
+    - Webhooks
+    - Elasticsearch
+    - AWS
+    - Nginx
+    - Playwright
+    - Redis
+    - Logfire
+    - MCP
+    - LLM orchestration
+    - Claude Code
+    - OpenAI Codex
+    - OpenClaw
+    - Hermes Agent
+
+preferred_locations:
+  - Delhi NCR
+  - Bengaluru
+  - Hyderabad
+  - Pune
+  - Mumbai
+  - Chennai
+
+remote_ok: true
+
+summary_for_matching: |
+  I am an AI Software Engineer Intern working on full-stack and AI-powered applications.
+  My experience includes building applications with React/Next.js, Node.js and Python/FastAPI,
+  working with SQL/NoSQL databases, REST APIs, authentication, and integrating LLM/agentic
+  tooling into real applications. I have worked on projects involving natural-language database
+  querying, MCP integrations, Elasticsearch-backed application features, and production-oriented
+  web development. I am primarily targeting early-career Software Engineer, Full Stack, Backend,
+  Frontend and AI Engineer opportunities where my existing development experience aligns
+  strongly with the role.

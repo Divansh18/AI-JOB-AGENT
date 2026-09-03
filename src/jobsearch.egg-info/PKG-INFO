@@ -1,0 +1,20 @@
+Metadata-Version: 2.4
+Name: jobsearch
+Version: 0.1.0
+Summary: Personal job discovery, ranking and application ledger
+Requires-Python: >=3.12
+Requires-Dist: typer>=0.12
+Requires-Dist: pydantic>=2.7
+Requires-Dist: PyYAML>=6.0
+Requires-Dist: httpx>=0.27
+Requires-Dist: Jinja2>=3.1
+Requires-Dist: rapidfuzz>=3.9
+Requires-Dist: numpy>=1.26
+Requires-Dist: python-dateutil>=2.9
+Requires-Dist: selectolax>=0.3.21
+Provides-Extra: embeddings
+Requires-Dist: fastembed>=0.3; extra == "embeddings"
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0; extra == "dev"
+Requires-Dist: pytest-cov>=5.0; extra == "dev"
+Requires-Dist: import-linter>=2.0; extra == "dev"

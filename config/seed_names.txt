@@ -1,0 +1,343 @@
+# Seed company NAMES for ATS board discovery.
+# These are hypotheses only. No ATS slug is ever written to companies.yaml
+# without a live probe + name-similarity check (see services/companies.py).
+# Add or remove freely, then re-run:
+#   jobsearch companies discover --names-file config/seed_names.txt
+
+# --- India: fintech & payments ---
+Razorpay
+Zerodha
+Groww
+CRED
+PhonePe
+Paytm
+Juspay
+Setu
+Zeta
+Slice
+Jupiter Money
+KreditBee
+Navi
+Perfios
+M2P Fintech
+Signzy
+Rupeek
+Lendingkart
+Yubi
+Refyne
+Decentro
+Cashfree
+Chargebee
+Recko
+
+# --- India: SaaS & developer tools ---
+Freshworks
+Zoho
+BrowserStack
+Postman
+HackerRank
+HackerEarth
+Hasura
+Atlan
+Whatfix
+CleverTap
+MoEngage
+WebEngage
+Netcore
+LeadSquared
+Kissflow
+Zluri
+Rocketlane
+SirionLabs
+Locus
+Innovaccer
+Darwinbox
+Keka
+SpotDraft
+Facilio
+Uniphore
+Observe AI
+Gupshup
+Exotel
+Plivo
+Kaleyra
+Tekion
+Icertis
+Druva
+Nutanix
+Rubrik
+Netskope
+Harness
+Airmeet
+Zenoti
+Vymo
+Eightfold AI
+Skit AI
+MindTickle
+Scaler
+Newton School
+Unacademy
+Vedantu
+PhysicsWallah
+upGrad
+Simplilearn
+Great Learning
+Emeritus
+
+# --- India: consumer & marketplaces ---
+Swiggy
+Zomato
+Flipkart
+Meesho
+Myntra
+Nykaa
+Lenskart
+BigBasket
+Blinkit
+Zepto
+Licious
+Country Delight
+Urban Company
+NoBroker
+MagicBricks
+OYO
+MakeMyTrip
+Ixigo
+Cleartrip
+RedBus
+Ola
+Rapido
+Dunzo
+Purplle
+Mamaearth
+Cult Fit
+HealthifyMe
+Practo
+PharmEasy
+Netmeds
+Apna
+Info Edge
+ShareChat
+Dailyhunt
+Inshorts
+Pratilipi
+Kuku FM
+Dream11
+MPL
+Games24x7
+Nazara
+Zupee
+WinZO
+
+# --- India: B2B, logistics, deeptech ---
+Delhivery
+Shiprocket
+Rivigo
+Blackbuck
+Porter
+Zetwerk
+OfBusiness
+Udaan
+Jumbotail
+ElasticRun
+Moglix
+Infra Market
+Ather Energy
+Ola Electric
+Bounce
+Yulu
+Agnikul Cosmos
+Skyroot Aerospace
+Pixxel
+Digantara
+GalaxEye
+Log9 Materials
+Ultraviolette
+
+# --- India / global enterprise engineering ---
+Sprinklr
+Salesforce
+Adobe
+Intuit
+Walmart
+Target
+Wells Fargo
+Goldman Sachs
+Morgan Stanley
+Optum
+Cisco
+VMware
+Qualcomm
+Nvidia
+Micron
+Arista Networks
+Juniper Networks
+Palo Alto Networks
+Fortinet
+Akamai
+Cloudera
+Confluent
+Databricks
+Snowflake
+MongoDB
+Elastic
+HashiCorp
+GitLab
+Atlassian
+Twilio
+Stripe
+Airbnb
+Uber
+Expedia
+Agoda
+Grab
+Gojek
+
+# --- Global: remote-friendly product companies ---
+Automattic
+Zapier
+Doist
+Toggl
+Buffer
+Ghost
+Sourcegraph
+Vercel
+Netlify
+Render
+Railway
+Supabase
+PlanetScale
+Neon
+Cockroach Labs
+Redis
+Timescale
+ClickHouse
+Grafana Labs
+Datadog
+New Relic
+Sentry
+PostHog
+Mixpanel
+Amplitude
+Segment
+Algolia
+Meilisearch
+Typesense
+Weaviate
+Qdrant
+Pinecone
+Chroma
+LangChain
+LlamaIndex
+Hugging Face
+Replicate
+Modal
+Baseten
+Together AI
+Fireworks AI
+Anyscale
+Scale AI
+Labelbox
+Cohere
+Mistral AI
+Perplexity
+Runway
+ElevenLabs
+Synthesia
+Descript
+Loom
+Notion
+Linear
+Figma
+Miro
+Airtable
+Coda
+ClickUp
+Asana
+Monday
+Slack
+Discord
+Calendly
+Typeform
+Webflow
+Framer
+Contentful
+Sanity
+Strapi
+Storyblok
+Prismic
+Shopify
+BigCommerce
+Squarespace
+Wix
+Canva
+Grammarly
+Duolingo
+Coursera
+Udemy
+Codecademy
+Pluralsight
+DataCamp
+Educative
+Brilliant
+Quizlet
+Chegg
+Skillshare
+MasterClass
+Remote
+Deel
+Oyster HR
+Rippling
+Gusto
+Justworks
+Personio
+Workable
+Lever
+Greenhouse
+Ashby
+Wellfound
+Otta
+Karat
+CoderPad
+CodeSignal
+Codility
+Turing
+Andela
+Toptal
+Arc dev
+X-Team
+Crossover
+Upwork
+Fiverr
+Braintrust
+Contra
+Mercury
+Brex
+Ramp
+Plaid
+Marqeta
+Checkout com
+Adyen
+Wise
+Revolut
+Monzo
+Starling Bank
+N26
+Klarna
+Affirm
+Chime
+Robinhood
+Coinbase
+Kraken
+Gemini
+Circle
+Ripple
+ConsenSys
+Alchemy
+Chainalysis
+Fireblocks
+Anchorage Digital
+Ledger
+Polygon
+CoinDCX
+CoinSwitch

@@ -1,0 +1,32 @@
+timezone: Asia/Kolkata
+db_path: data/jobsearch.db
+digest_dir: data/digests
+
+http:
+  timeout_seconds: 20
+  max_retries: 3
+  requests_per_second: 3.0
+  user_agent: "jobsearch-personal/0.1 (personal job search; contact@chatmro.com)"
+
+llm:
+  # Phase 0 runs entirely without an LLM. Recurring cost at this setting: 0.
+  enabled: false
+
+  # Provider is config-driven. Switching requires no code change:
+  #   claude_cli -> temporary local runtime, needs the `claude` binary on PATH
+  #   anthropic  -> long-term, needs ANTHROPIC_API_KEY in the environment
+  provider: claude_cli
+
+  model: claude-haiku-4-5
+  daily_cap_inr: 15.0
+  usd_to_inr: 88.0
+  max_jd_chars: 6000
+  max_output_tokens: 1024
+  cli_timeout_seconds: 120
+  api_timeout_seconds: 60
+
+digest:
+  top_n: 20
+  aging_min_score: 70
+  aging_days: 10
+  followup_days: 7

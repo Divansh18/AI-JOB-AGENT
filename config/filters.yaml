@@ -1,0 +1,62 @@
+# Hard filters. Every rule has a stable id that appears in filter_results and
+# in `jobsearch filter --explain <job_id>`.
+#
+# Design asymmetry: these filters are tuned to avoid FALSE NEGATIVES. Wherever
+# a signal is missing, the job is KEPT. Missing a good role costs far more
+# than reading a bad card.
+
+version: 1
+
+titles:
+  include_tiers: [core_swe, stack, ai]
+  keep_ambiguous: true      # unrecognised titles are kept and ranked low
+  keep_adjacent: true       # data/mobile/solutions engineering kept, ranked lower
+  exclude_senior_titles: true
+
+experience:
+  # Graded, not binary. See domain/extract.py:
+  #   0-2 required  -> strong     (ranking bonus)
+  #   3   required  -> penalty    (kept, ranking penalty)
+  #   <=3 preferred -> ok         (kept, no penalty)
+  #   4+  preferred -> soft_high  (kept, large ranking penalty)
+  #   4+  required  -> hard_high  (excluded here)
+  exclude_verdicts: [hard_high]
+  unknown_policy: pass
+
+locations:
+  preferred_cities: [Delhi NCR, Bengaluru, Hyderabad, Pune, Mumbai, Chennai]
+  allow_countries: [IN]
+  remote:
+    allow: true
+    allowed_scopes: [india, apac, global, unknown]
+    exclude_scopes: [us_only, uk_only, eu_only, canada_only]
+  unknown_policy: pass
+
+employment:
+  preferred: [full_time]
+  deprioritize: [internship]      # kept, ranking penalty
+  exclude: [contract, part_time]
+
+work_authorization:
+  exclude_blocked: true
+
+companies:
+  blocklist: []
+  blocklist_patterns:
+    - staffing
+    - recruiters
+    - manpower
+    - consultancy services
+    - talent solutions
+    - hr services
+
+content:
+  exclude_phrases:
+    - phd required
+    - phd is required
+    - 10+ years
+    - "8+ years"
+  min_description_chars: 120
+
+freshness:
+  max_age_days: 45

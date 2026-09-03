@@ -1,0 +1,30 @@
+# Labelled YOE fixtures. Each case asserts the graded verdict from the
+# approved policy:
+#   0-2 required -> strong | 3 required -> penalty | <=3 preferred -> ok
+#   4+ preferred -> soft_high | 4+ required -> hard_high | none -> unknown
+cases:
+  - {text: "0-2 years of experience in software development.", verdict: strong}
+  - {text: "We are hiring freshers for our engineering team.", verdict: strong}
+  - {text: "Ideal for recent graduates and entry level engineers.", verdict: strong}
+  - {text: "1+ years of professional experience required.", verdict: strong}
+  - {text: "At least 2 years of backend development experience.", verdict: strong}
+  - {text: "2 to 4 years of experience building web applications.", verdict: strong}
+  - {text: "Minimum of 3 years of professional software development experience required.", verdict: penalty}
+  - {text: "3+ years of hands-on engineering experience is required.", verdict: penalty}
+  - {text: "You must have at least three years of Python experience.", verdict: penalty}
+  - {text: "3+ years of experience preferred, but not required.", verdict: ok}
+  - {text: "2 years of experience would be nice to have.", verdict: ok}
+  - {text: "Ideally you bring 3 years of relevant experience.", verdict: ok}
+  - {text: "5+ years of experience is a plus.", verdict: soft_high}
+  - {text: "8 years of distributed systems experience preferred.", verdict: soft_high}
+  - {text: "You must have at least 5 years of backend experience.", verdict: hard_high}
+  - {text: "Requires 7+ years of engineering experience.", verdict: hard_high}
+  - {text: "Minimum 10 years building large scale systems.", verdict: hard_high}
+  - {text: "We require four years of relevant industry experience.", verdict: hard_high}
+  - {text: "Build great software with a talented team.", verdict: unknown}
+  - {text: "Our company was founded 10 years ago and has grown fast.", verdict: unknown}
+  - {text: "Candidates should have completed a 4 year degree program.", verdict: unknown}
+  - {text: "We have grown 5 years in a row.", verdict: unknown}
+  - {text: "Over the last 3 years we scaled to a million users.", verdict: unknown}
+  - {text: "Equity vests over a 4 year vesting schedule.", verdict: unknown}
+  - {text: "In the next 5 years we plan to expand globally.", verdict: unknown}

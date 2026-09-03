@@ -1,0 +1,9 @@
+data/
+.venv/
+__pycache__/
+*.pyc
+.env
+*.db
+.pytest_cache/
+.coverage
+config/companies.candidates.yaml
