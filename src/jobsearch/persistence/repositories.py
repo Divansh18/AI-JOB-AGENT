@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import Any, Iterable
 
 from ..domain.candidate import CandidateFact, VerifiedAnswer
+from ..domain.master_resume import MasterResumeRecord
 from ..domain.models import Job
 from .db import iso, parse_dt, utcnow
 
@@ -67,6 +68,23 @@ def _row_to_candidate_answer(row: sqlite3.Row) -> VerifiedAnswer:
         human_review_required=bool(row["human_review_required"]),
         created_at=parse_dt(row["created_at"]),
         updated_at=parse_dt(row["updated_at"]),
+    )
+
+
+def _row_to_master_resume(row: sqlite3.Row) -> MasterResumeRecord:
+    return MasterResumeRecord(
+        id=row["id"],
+        identity=row["identity"],
+        version=int(row["version"]),
+        file_path=row["file_path"],
+        active=bool(row["active"]),
+        page_limit=int(row["page_limit"]),
+        file_hash=row["file_hash"],
+        extracted_text=row["extracted_text"],
+        sections=json.loads(row["sections_json"]) if row["sections_json"] else {},
+        created_at=parse_dt(row["created_at"]),
+        updated_at=parse_dt(row["updated_at"]),
+        last_ingested_at=parse_dt(row["last_ingested_at"]),
     )
 
 
@@ -502,6 +520,23 @@ class CandidateFactRepo:
         sql += " ORDER BY category, fact_key"
         return [_row_to_candidate_fact(r) for r in self.conn.execute(sql, tuple(params)).fetchall()]
 
+    def delete_missing_from_source(self, source: str, keep_selectors: set[tuple[str, str]]) -> int:
+        rows = self.conn.execute(
+            "SELECT category, fact_key FROM candidate_facts WHERE source=?",
+            (source,),
+        ).fetchall()
+        deleted = 0
+        for row in rows:
+            selector = (row["category"], row["fact_key"])
+            if selector in keep_selectors:
+                continue
+            self.conn.execute(
+                "DELETE FROM candidate_facts WHERE category=? AND fact_key=?",
+                selector,
+            )
+            deleted += 1
+        return deleted
+
 
 class CandidateAnswerRepo:
     def __init__(self, conn: sqlite3.Connection):
@@ -554,6 +589,110 @@ class CandidateAnswerRepo:
         return [_row_to_candidate_answer(r) for r in self.conn.execute(sql, tuple(params)).fetchall()]
 
 
+class MasterResumeRepo:
+    def __init__(self, conn: sqlite3.Connection):
+        self.conn = conn
+
+    def register(
+        self,
+        *,
+        identity: str,
+        version: int,
+        file_path: str,
+        active: bool,
+        page_limit: int,
+        file_hash: str,
+    ) -> MasterResumeRecord:
+        now = iso(utcnow())
+        if active:
+            self.conn.execute("UPDATE master_resumes SET active=0, updated_at=? WHERE active=1", (now,))
+        self.conn.execute(
+            """
+            INSERT INTO master_resumes
+                (identity, version, file_path, active, page_limit, file_hash,
+                 sections_json, created_at, updated_at)
+            VALUES (?,?,?,?,?,?,?,?,?)
+            ON CONFLICT(identity, version) DO UPDATE SET
+                file_path=excluded.file_path,
+                active=excluded.active,
+                page_limit=excluded.page_limit,
+                file_hash=excluded.file_hash,
+                updated_at=excluded.updated_at
+            """,
+            (
+                identity,
+                version,
+                file_path,
+                int(active),
+                page_limit,
+                file_hash,
+                "{}",
+                now,
+                now,
+            ),
+        )
+        row = self.conn.execute(
+            "SELECT * FROM master_resumes WHERE identity=? AND version=?",
+            (identity, version),
+        ).fetchone()
+        return _row_to_master_resume(row)
+
+    def record_ingestion(
+        self,
+        *,
+        identity: str,
+        version: int,
+        file_hash: str,
+        extracted_text: str,
+        sections: dict[str, Any],
+    ) -> MasterResumeRecord:
+        now = iso(utcnow())
+        self.conn.execute(
+            """
+            UPDATE master_resumes
+               SET file_hash=?,
+                   extracted_text=?,
+                   sections_json=?,
+                   updated_at=?,
+                   last_ingested_at=?
+             WHERE identity=? AND version=?
+            """,
+            (
+                file_hash,
+                extracted_text,
+                json.dumps(sections, ensure_ascii=True, sort_keys=True),
+                now,
+                now,
+                identity,
+                version,
+            ),
+        )
+        row = self.conn.execute(
+            "SELECT * FROM master_resumes WHERE identity=? AND version=?",
+            (identity, version),
+        ).fetchone()
+        return _row_to_master_resume(row)
+
+    def get(self, *, identity: str, version: int) -> MasterResumeRecord | None:
+        row = self.conn.execute(
+            "SELECT * FROM master_resumes WHERE identity=? AND version=?",
+            (identity, version),
+        ).fetchone()
+        return _row_to_master_resume(row) if row else None
+
+    def get_active(self) -> MasterResumeRecord | None:
+        row = self.conn.execute(
+            "SELECT * FROM master_resumes WHERE active=1 ORDER BY updated_at DESC, id DESC LIMIT 1"
+        ).fetchone()
+        return _row_to_master_resume(row) if row else None
+
+    def list(self) -> list[MasterResumeRecord]:
+        rows = self.conn.execute(
+            "SELECT * FROM master_resumes ORDER BY active DESC, updated_at DESC, id DESC"
+        ).fetchall()
+        return [_row_to_master_resume(row) for row in rows]
+
+
 class ResumeVariantRepo:
     def __init__(self, conn: sqlite3.Connection):
         self.conn = conn
@@ -575,6 +714,11 @@ class ResumeVariantRepo:
         content: dict[str, Any],
         validation_status: str,
         validation_errors: list[dict[str, Any]],
+        page_validation_status: str = "not_rendered",
+        output_pdf_path: str | None = None,
+        page_count: int | None = None,
+        output_evidence_refs: list[str] | None = None,
+        render_fingerprint: str | None = None,
     ) -> int:
         cur = self.conn.execute(
             """
@@ -582,8 +726,9 @@ class ResumeVariantRepo:
                 (job_id, created_at, fit_score, source_truth_version, source_truth_hash,
                  master_resume_identity, master_resume_version, template_identity, page_limit,
                  tailoring_decision, tailoring_reasons, tailoring_evidence_refs,
-                 content_json, validation_status, validation_errors)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                 content_json, validation_status, validation_errors, page_validation_status,
+                 output_pdf_path, page_count, output_evidence_refs, render_fingerprint)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """,
             (
                 job_id,
@@ -601,6 +746,11 @@ class ResumeVariantRepo:
                 json.dumps(content, ensure_ascii=True, sort_keys=True),
                 validation_status,
                 json.dumps(validation_errors, ensure_ascii=True, sort_keys=True),
+                page_validation_status,
+                output_pdf_path,
+                page_count,
+                json.dumps(output_evidence_refs or [], ensure_ascii=True, sort_keys=True),
+                render_fingerprint,
             ),
         )
         return cur.lastrowid
@@ -624,6 +774,58 @@ class ResumeVariantRepo:
         sql += " ORDER BY rv.created_at DESC, rv.id DESC LIMIT ?"
         params.append(limit)
         return self.conn.execute(sql, tuple(params)).fetchall()
+
+    def find_by_render_fingerprint(self, render_fingerprint: str) -> sqlite3.Row | None:
+        return self.conn.execute(
+            """
+            SELECT rv.*, j.title, j.company_name_raw
+            FROM resume_variants rv
+            JOIN jobs j ON j.id = rv.job_id
+            WHERE rv.render_fingerprint=?
+            ORDER BY rv.created_at DESC, rv.id DESC
+            LIMIT 1
+            """,
+            (render_fingerprint,),
+        ).fetchone()
+
+    def update_rendered_output(
+        self,
+        resume_id: int,
+        *,
+        content: dict[str, Any],
+        validation_status: str,
+        validation_errors: list[dict[str, Any]],
+        page_validation_status: str,
+        output_pdf_path: str | None,
+        page_count: int | None,
+        output_evidence_refs: list[str],
+        render_fingerprint: str | None = None,
+    ) -> None:
+        self.conn.execute(
+            """
+            UPDATE resume_variants
+            SET content_json=?,
+                validation_status=?,
+                validation_errors=?,
+                page_validation_status=?,
+                output_pdf_path=?,
+                page_count=?,
+                output_evidence_refs=?,
+                render_fingerprint=COALESCE(?, render_fingerprint)
+            WHERE id=?
+            """,
+            (
+                json.dumps(content, ensure_ascii=True, sort_keys=True),
+                validation_status,
+                json.dumps(validation_errors, ensure_ascii=True, sort_keys=True),
+                page_validation_status,
+                output_pdf_path,
+                page_count,
+                json.dumps(output_evidence_refs, ensure_ascii=True, sort_keys=True),
+                render_fingerprint,
+                resume_id,
+            ),
+        )
 
 
 class EventRepo:

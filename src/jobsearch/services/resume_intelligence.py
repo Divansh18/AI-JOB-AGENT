@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 from typing import Any
 
@@ -11,7 +11,10 @@ from ..domain.filters import evaluate
 from ..domain.resume_intelligence import (
     FitReport,
     JobAnalysis,
+    MasterResume,
+    PAGE_STATUS_NOT_RENDERED,
     ResumeSourceModel,
+    ResumeTemplate,
     ResumeValidationReport,
     TailoredResume,
     build_fit_report,
@@ -27,6 +30,7 @@ from ..persistence.repositories import (
     CandidateFactRepo,
     FilterRepo,
     JobRepo,
+    MasterResumeRepo,
     ResumeVariantRepo,
 )
 from .audit import Audit
@@ -67,6 +71,26 @@ class ResumeVariantResult:
     def as_dict(self) -> dict[str, Any]:
         return {
             "resume_id": self.resume_id,
+            "analysis": self.analysis.as_dict(),
+            "source_model": self.source_model.as_dict(),
+            "fit_report": self.fit_report.as_dict(),
+            "tailored_resume": self.tailored_resume.as_dict(),
+            "validation": self.validation.as_dict(),
+            "source_truth_hash": self.source_truth_hash,
+        }
+
+
+@dataclass(frozen=True)
+class PreparedResumeVariant:
+    analysis: JobAnalysis
+    source_model: ResumeSourceModel
+    fit_report: FitReport
+    tailored_resume: TailoredResume
+    validation: ResumeValidationReport
+    source_truth_hash: str
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
             "analysis": self.analysis.as_dict(),
             "source_model": self.source_model.as_dict(),
             "fit_report": self.fit_report.as_dict(),
@@ -139,30 +163,30 @@ def create_resume_variant(
     analysis: JobAnalysis | None = None,
     as_of: date | None = None,
 ) -> ResumeVariantResult:
-    bundle = fit_job(conn, config, job_id, analysis=analysis, as_of=as_of)
-    tailored = tailor_resume(bundle.analysis, bundle.fit_report, bundle.source_model)
-    validation = validate_tailored_resume(tailored, bundle.source_model, as_of=as_of)
+    prepared = prepare_resume_variant(conn, config, job_id, analysis=analysis, as_of=as_of)
 
     payload = {
-        "analysis": bundle.analysis.as_dict(),
-        "fit_report": bundle.fit_report.as_dict(),
-        "resume": tailored.as_dict(),
+        "analysis": prepared.analysis.as_dict(),
+        "source_model": prepared.source_model.as_dict(),
+        "fit_report": prepared.fit_report.as_dict(),
+        "resume": prepared.tailored_resume.as_dict(),
     }
     resume_id = ResumeVariantRepo(conn).create(
         job_id=job_id,
-        fit_score=float(bundle.fit_report.overall_fit_score),
+        fit_score=float(prepared.fit_report.overall_fit_score),
         source_truth_version=TRUTH_STORE_VERSION,
-        source_truth_hash=bundle.source_truth_hash,
-        master_resume_identity=tailored.master_resume.identity,
-        master_resume_version=tailored.master_resume.version,
-        template_identity=tailored.template.identity,
-        page_limit=tailored.page_limit,
-        tailoring_decision=tailored.recommendation.decision,
-        tailoring_reasons=tailored.recommendation.reasons,
-        tailoring_evidence_refs=tailored.recommendation.evidence_refs,
+        source_truth_hash=prepared.source_truth_hash,
+        master_resume_identity=prepared.tailored_resume.master_resume.identity,
+        master_resume_version=prepared.tailored_resume.master_resume.version,
+        template_identity=prepared.tailored_resume.template.identity,
+        page_limit=prepared.tailored_resume.page_limit,
+        tailoring_decision=prepared.tailored_resume.recommendation.decision,
+        tailoring_reasons=prepared.tailored_resume.recommendation.reasons,
+        tailoring_evidence_refs=prepared.tailored_resume.recommendation.evidence_refs,
         content=payload,
-        validation_status=validation.status,
-        validation_errors=[issue.as_dict() for issue in validation.issues],
+        validation_status=prepared.validation.status,
+        validation_errors=[issue.as_dict() for issue in prepared.validation.issues],
+        page_validation_status=PAGE_STATUS_NOT_RENDERED,
     )
 
     Audit(conn).human(
@@ -170,18 +194,18 @@ def create_resume_variant(
         "resume_variant",
         resume_id,
         job_id=job_id,
-        fit_score=bundle.fit_report.overall_fit_score,
-        validation_status=validation.status,
-        tailoring_decision=tailored.recommendation.decision,
+        fit_score=prepared.fit_report.overall_fit_score,
+        validation_status=prepared.validation.status,
+        tailoring_decision=prepared.tailored_resume.recommendation.decision,
     )
     return ResumeVariantResult(
         resume_id=resume_id,
-        analysis=bundle.analysis,
-        source_model=bundle.source_model,
-        fit_report=bundle.fit_report,
-        tailored_resume=tailored,
-        validation=validation,
-        source_truth_hash=bundle.source_truth_hash,
+        analysis=prepared.analysis,
+        source_model=prepared.source_model,
+        fit_report=prepared.fit_report,
+        tailored_resume=prepared.tailored_resume,
+        validation=prepared.validation,
+        source_truth_hash=prepared.source_truth_hash,
     )
 
 
@@ -207,4 +231,52 @@ def _resume_row_to_dict(row) -> dict[str, Any]:
     base["validation_errors"] = errors
     base["tailoring_reasons"] = reasons
     base["tailoring_evidence_refs"] = evidence
+    base["output_evidence_refs"] = json.loads(row["output_evidence_refs"]) if row["output_evidence_refs"] else []
     return base
+
+
+def prepare_resume_variant(
+    conn,
+    config,
+    job_id: int,
+    *,
+    analysis: JobAnalysis | None = None,
+    as_of: date | None = None,
+) -> PreparedResumeVariant:
+    bundle = fit_job(conn, config, job_id, analysis=analysis, as_of=as_of)
+    tailored = _apply_active_master_metadata(conn, tailor_resume(bundle.analysis, bundle.fit_report, bundle.source_model))
+    validation = validate_tailored_resume(tailored, bundle.source_model, as_of=as_of)
+    return PreparedResumeVariant(
+        analysis=bundle.analysis,
+        source_model=bundle.source_model,
+        fit_report=bundle.fit_report,
+        tailored_resume=tailored,
+        validation=validation,
+        source_truth_hash=bundle.source_truth_hash,
+    )
+
+
+def _apply_active_master_metadata(conn, tailored: TailoredResume) -> TailoredResume:
+    record = MasterResumeRepo(conn).get_active()
+    if record is None:
+        return tailored
+    status = "ingested" if record.last_ingested_at else "registered"
+    master_resume = MasterResume(
+        identity=record.identity,
+        version=record.version,
+        page_limit=record.page_limit,
+        source_status=status,
+    )
+    template = ResumeTemplate(
+        identity=f"{record.identity}_template",
+        master_resume_identity=record.identity,
+        page_limit=record.page_limit,
+        layout_policy="preserve_existing_layout",
+        render_validation_status=PAGE_STATUS_NOT_RENDERED,
+    )
+    return replace(
+        tailored,
+        master_resume=master_resume,
+        template=template,
+        page_limit=record.page_limit,
+    )

@@ -7,3 +7,4 @@ __pycache__/
 .pytest_cache/
 .coverage
 config/companies.candidates.yaml
+assets/resume/*.pdf

@@ -126,6 +126,7 @@ SKILL_PATTERNS = {
     "node.js": (r"\bnode\b", r"\bnode\.js\b", r"\bnodejs\b"),
     "express.js": (r"\bexpress\b", r"\bexpress\.js\b", r"\bexpressjs\b"),
     "nestjs": (r"\bnest\b", r"\bnestjs\b", r"\bnest\.js\b"),
+    "playwright": (r"\bplaywright\b",),
     "rest apis": (r"\brest api\b", r"\brest apis\b", r"\brestful api\b", r"\brestful apis\b"),
     "graphql": (r"\bgraphql\b",),
     "sql": (r"\bsql\b",),
@@ -163,6 +164,11 @@ DEFAULT_MASTER_RESUME_IDENTITY = "canonical_master_resume"
 DEFAULT_MASTER_RESUME_VERSION = "v1"
 DEFAULT_TEMPLATE_IDENTITY = "canonical_master_resume_template"
 RESUME_PAGE_LIMIT = 1
+PAGE_STATUS_NOT_RENDERED = "not_rendered"
+PAGE_STATUS_VALID = "valid"
+PAGE_STATUS_OVERFLOW = "overflow"
+PAGE_STATUS_NOT_APPLICABLE = "not_applicable"
+PAGE_STATUS_MISSING_OUTPUT = "missing_output"
 
 
 @dataclass(frozen=True)
@@ -474,6 +480,9 @@ class TailoredResume:
     recommendation: TailoringRecommendation
     changes: list[ResumeChange] = field(default_factory=list)
     preview: ResumeSourceModel | None = None
+    output_pdf_path: str | None = None
+    page_count: int | None = None
+    evidence_refs_used: list[str] = field(default_factory=list)
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -486,6 +495,9 @@ class TailoredResume:
             "recommendation": self.recommendation.as_dict(),
             "changes": [change.as_dict() for change in self.changes],
             "preview": self.preview.as_dict() if self.preview else None,
+            "output_pdf_path": self.output_pdf_path,
+            "page_count": self.page_count,
+            "evidence_refs_used": self.evidence_refs_used,
         }
 
 
@@ -555,6 +567,19 @@ def _split_sentences(text: str) -> list[str]:
     return [part.strip(" -\t") for part in raw if part and part.strip(" -\t")]
 
 
+def _normalize_match_text(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", (value or "").lower()).strip()
+
+
+def _skill_supported_by_evidence(skill: str, supported: str) -> bool:
+    patterns = SKILL_PATTERNS.get(skill, ())
+    if any(re.search(pattern, supported) for pattern in patterns):
+        return True
+    normalized_skill = _normalize_match_text(skill)
+    normalized_supported = _normalize_match_text(supported)
+    return bool(normalized_skill and normalized_skill in normalized_supported)
+
+
 def _detect_skills(text: str) -> list[str]:
     found: list[str] = []
     lowered = (text or "").lower()
@@ -590,6 +615,11 @@ def _parse_iso_date(value: str | None) -> date | None:
         return datetime.fromisoformat(value).date()
     except ValueError:
         return None
+
+
+def _descending_iso_sort_key(value: str | None) -> int:
+    digits = str(value or "").replace("-", "")
+    return -int(digits) if digits.isdigit() else 0
 
 
 def _merge_day_ranges(ranges: list[tuple[date, date]]) -> list[tuple[date, date]]:
@@ -1310,8 +1340,12 @@ def build_resume_source_model(
     experience: list[ResumeExperienceEntry] = []
     for fact in sorted(
         [fact for fact in verified_facts if fact.category == "work_experience"],
-        key=lambda item: ((item.value or {}).get("end_date") or "9999-12-31", item.key),
-        reverse=True,
+        key=lambda item: (
+            0 if (item.value or {}).get("sort_index") is not None else 1,
+            int((item.value or {}).get("sort_index") or 9999),
+            _descending_iso_sort_key((item.value or {}).get("end_date")),
+            item.key,
+        ),
     ):
         value = fact.value if isinstance(fact.value, dict) else {}
         ref = [_fact_ref(fact)]
@@ -1372,8 +1406,12 @@ def build_resume_source_model(
     education: list[ResumeEducationEntry] = []
     for fact in sorted(
         [fact for fact in verified_facts if fact.category == "education"],
-        key=lambda item: ((item.value or {}).get("end_date") or "9999-12-31", item.key),
-        reverse=True,
+        key=lambda item: (
+            0 if (item.value or {}).get("sort_index") is not None else 1,
+            int((item.value or {}).get("sort_index") or 9999),
+            _descending_iso_sort_key((item.value or {}).get("end_date")),
+            item.key,
+        ),
     ):
         value = fact.value if isinstance(fact.value, dict) else {}
         education.append(
@@ -1608,7 +1646,7 @@ def tailor_resume(
         master_resume=master_resume,
         template=template,
         page_limit=RESUME_PAGE_LIMIT,
-        page_validation_status="not_rendered",
+        page_validation_status=PAGE_STATUS_NOT_RENDERED,
         recommendation=recommendation,
         changes=_build_change_plan(recommendation, preview, matched_required, preferred),
         preview=preview if recommendation.decision == "tailor" else None,
@@ -1767,6 +1805,13 @@ def validate_tailored_resume(
     as_of: date | None = None,
 ) -> ResumeValidationReport:
     issues: list[ResumeValidationIssue] = []
+    allowed_page_statuses = {
+        PAGE_STATUS_NOT_RENDERED,
+        PAGE_STATUS_VALID,
+        PAGE_STATUS_OVERFLOW,
+        PAGE_STATUS_NOT_APPLICABLE,
+        PAGE_STATUS_MISSING_OUTPUT,
+    }
     if resume.page_limit != RESUME_PAGE_LIMIT:
         issues.append(
             ResumeValidationIssue(
@@ -1774,11 +1819,21 @@ def validate_tailored_resume(
                 message=f"resume variants currently support only page_limit={RESUME_PAGE_LIMIT}",
             )
         )
-    if resume.page_validation_status != "not_rendered":
+    if resume.page_validation_status not in allowed_page_statuses:
         issues.append(
             ResumeValidationIssue(
                 code="invalid_page_validation_status",
-                message="page validation is not implemented yet; status must remain not_rendered",
+                message=(
+                    "page_validation_status must be one of "
+                    f"{sorted(allowed_page_statuses)}"
+                ),
+            )
+        )
+    if resume.template.render_validation_status != resume.page_validation_status:
+        issues.append(
+            ResumeValidationIssue(
+                code="template_render_status_mismatch",
+                message="template render validation status must match the variant page validation status",
             )
         )
     if resume.template.page_limit != resume.page_limit or resume.master_resume.page_limit != resume.page_limit:
@@ -1788,6 +1843,94 @@ def validate_tailored_resume(
                 message="master resume, template, and variant page limits must match",
             )
         )
+    if resume.page_validation_status == PAGE_STATUS_NOT_RENDERED:
+        if resume.output_pdf_path:
+            issues.append(
+                ResumeValidationIssue(
+                    code="unexpected_output_pdf_path",
+                    message="not_rendered variants must not point to an output PDF",
+                )
+            )
+        if resume.page_count is not None:
+            issues.append(
+                ResumeValidationIssue(
+                    code="unexpected_page_count",
+                    message="not_rendered variants must not store a page count",
+                )
+            )
+    elif resume.page_validation_status == PAGE_STATUS_NOT_APPLICABLE:
+        if resume.recommendation.decision != "poor_fit":
+            issues.append(
+                ResumeValidationIssue(
+                    code="invalid_not_applicable_page_status",
+                    message="page_validation_status=not_applicable is only valid for poor_fit decisions",
+                )
+            )
+        if resume.output_pdf_path:
+            issues.append(
+                ResumeValidationIssue(
+                    code="unexpected_output_for_poor_fit",
+                    message="poor_fit variants must not point to an output PDF",
+                )
+            )
+        if resume.page_count is not None:
+            issues.append(
+                ResumeValidationIssue(
+                    code="unexpected_page_count_for_poor_fit",
+                    message="poor_fit variants must not store a page count",
+                )
+            )
+    elif resume.page_validation_status == PAGE_STATUS_MISSING_OUTPUT:
+        if not resume.output_pdf_path:
+            issues.append(
+                ResumeValidationIssue(
+                    code="missing_output_pdf_path",
+                    message="missing_output variants must retain the expected output path",
+                )
+            )
+        if resume.page_count is not None:
+            issues.append(
+                ResumeValidationIssue(
+                    code="unexpected_page_count_for_missing_output",
+                    message="missing_output variants must not store a page count",
+                )
+            )
+    else:
+        if resume.recommendation.decision == "poor_fit":
+            issues.append(
+                ResumeValidationIssue(
+                    code="unexpected_rendered_output_for_poor_fit",
+                    message="poor_fit variants must not produce a rendered resume artifact",
+                )
+            )
+        if not resume.output_pdf_path:
+            issues.append(
+                ResumeValidationIssue(
+                    code="missing_output_pdf_path",
+                    message="rendered variants must store an output PDF path",
+                )
+            )
+        if resume.page_count is None or resume.page_count <= 0:
+            issues.append(
+                ResumeValidationIssue(
+                    code="missing_page_count",
+                    message="rendered variants must store a positive page count",
+                )
+            )
+        elif resume.page_validation_status == PAGE_STATUS_VALID and resume.page_count != resume.page_limit:
+            issues.append(
+                ResumeValidationIssue(
+                    code="validated_page_count_mismatch",
+                    message="page_validation_status=valid requires the rendered PDF to match the page limit exactly",
+                )
+            )
+        elif resume.page_validation_status == PAGE_STATUS_OVERFLOW and resume.page_count <= resume.page_limit:
+            issues.append(
+                ResumeValidationIssue(
+                    code="overflow_page_count_mismatch",
+                    message="page_validation_status=overflow requires the rendered PDF to exceed the page limit",
+                )
+            )
     if resume.recommendation.decision not in {"use_base", "tailor", "poor_fit"}:
         issues.append(
             ResumeValidationIssue(
@@ -1858,7 +2001,7 @@ def validate_tailored_resume(
                     )
                 )
         for skill in _detect_skills(item.text):
-            if not any(re.search(pattern, supported) for pattern in SKILL_PATTERNS.get(skill, ())):
+            if not _skill_supported_by_evidence(skill, supported):
                 issues.append(
                     ResumeValidationIssue(
                         code="unsupported_technology_claim",
@@ -1895,7 +2038,7 @@ def validate_tailored_resume(
             for ref in skill.evidence_refs
             for text in source_refs.get(ref, [])
         ).lower()
-        if not skill.evidence_refs or not any(re.search(pattern, supported) for pattern in SKILL_PATTERNS.get(skill.skill, ())):
+        if not skill.evidence_refs or not _skill_supported_by_evidence(skill.skill, supported):
             issues.append(
                 ResumeValidationIssue(
                     code="unsupported_skill_entry",

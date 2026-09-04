@@ -32,8 +32,10 @@ from ..services import candidate as candidate_service
 from ..services import digest as digest_service
 from ..services import health as health_service
 from ..services import ledger as ledger_service
+from ..services import master_resume as master_resume_service
 from ..services import pipeline as pipeline_service
 from ..services import resume_intelligence as resume_service
+from ..services import resume_output as resume_output_service
 
 app = typer.Typer(add_completion=False, no_args_is_help=True,
                   help="Personal job discovery, ranking and application ledger.")
@@ -43,12 +45,14 @@ db_app = typer.Typer(no_args_is_help=True, help="Database maintenance.")
 candidate_app = typer.Typer(no_args_is_help=True, help="Manage the verified candidate truth store.")
 answers_app = typer.Typer(no_args_is_help=True, help="Manage reusable verified application answers.")
 resume_app = typer.Typer(no_args_is_help=True, help="Analyze fit and manage tailored resume variants.")
+resume_master_app = typer.Typer(no_args_is_help=True, help="Register and ingest the canonical master resume.")
 app.add_typer(companies_app, name="companies")
 app.add_typer(jobs_app, name="jobs")
 app.add_typer(db_app, name="db")
 app.add_typer(candidate_app, name="candidate")
 app.add_typer(answers_app, name="answers")
 app.add_typer(resume_app, name="resume")
+resume_app.add_typer(resume_master_app, name="master")
 
 console = Console()
 
@@ -99,6 +103,8 @@ def _render_resume_preview(content: dict) -> None:
     template = resume.get("template") or {}
     page_limit = resume.get("page_limit")
     page_status = resume.get("page_validation_status")
+    output_pdf_path = resume.get("output_pdf_path")
+    page_count = resume.get("page_count")
 
     console.print(f"decision: {decision}")
     if reasons:
@@ -112,6 +118,8 @@ def _render_resume_preview(content: dict) -> None:
             f"page_limit={page_limit or '-'}, "
             f"page_status={page_status or '-'}"
         )
+    if output_pdf_path:
+        console.print(f"output: {output_pdf_path}  pages={page_count or '-'}")
     if decision == "use_base":
         console.print("resume action: keep the canonical master resume unchanged.")
         return
@@ -152,6 +160,30 @@ def _render_resume_preview(content: dict) -> None:
                 console.print(f"    {entry['summary']['text']}")
             for bullet in entry.get("bullets", [])[:2]:
                 console.print(f"    • {bullet['text']}")
+
+
+def _render_master_resume(record_payload: dict) -> None:
+    master = record_payload["master_resume"]
+    console.print(
+        f"[bold]{master['identity']}[/] v{master['version']}  "
+        f"active={'yes' if master['active'] else 'no'}  "
+        f"page_limit={master['page_limit']}"
+    )
+    console.print(f"path: {master['file_path']}")
+    if master.get("last_ingested_at"):
+        console.print(f"last ingested: {master['last_ingested_at']}")
+    sections = record_payload.get("detected_sections") or master.get("sections", {}).get("sections_detected") or []
+    counts = record_payload.get("section_counts") or {}
+    if not counts:
+        sections_payload = master.get("sections") or {}
+        counts = sections_payload.get("section_counts") or {}
+    if sections:
+        console.print("detected sections: " + ", ".join(sections))
+    if counts:
+        console.print(
+            "section counts: "
+            + ", ".join(f"{name}={count}" for name, count in counts.items() if count)
+        )
 
 
 # --- setup -----------------------------------------------------------------
@@ -939,6 +971,66 @@ def resume_show(resume_id: int, json_out: bool = typer.Option(False, "--json")) 
     _render_resume_preview(payload["content_json"])
 
 
+@resume_app.command("build")
+def resume_build(
+    job_id: int,
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Build the actual resume artifact for a shortlisted job."""
+    config, conn = _ctx()
+    try:
+        payload = resume_output_service.build_resume_output(conn, config, job_id)
+    except resume_output_service.ResumeOutputError as exc:
+        console.print(f"[red]{exc}[/]")
+        raise typer.Exit(1)
+
+    if _emit(payload, json_out):
+        if not payload["validation"]["ok"]:
+            raise typer.Exit(1)
+        return
+
+    console.print(
+        f"[green]built[/] resume variant {payload['resume_id']}  "
+        f"fit={payload['fit_report'].get('overall_fit_score', 0)}  "
+        f"validation={payload['validation']['status']}  "
+        f"reused={'yes' if payload.get('reused_existing') else 'no'}"
+    )
+    for issue in payload["validation"]["issues"]:
+        console.print(f"    [red]{issue['code']}[/] {issue['message']}")
+    _render_resume_preview(payload)
+    if not payload["validation"]["ok"]:
+        raise typer.Exit(1)
+
+
+@resume_app.command("validate")
+def resume_validate(
+    resume_id: int,
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Recount rendered pages and revalidate a stored resume variant."""
+    config, conn = _ctx()
+    try:
+        payload = resume_output_service.validate_resume_output(conn, config, resume_id)
+    except resume_output_service.ResumeOutputError as exc:
+        console.print(f"[red]{exc}[/]")
+        raise typer.Exit(1)
+
+    if _emit(payload, json_out):
+        if not payload["validation"]["ok"]:
+            raise typer.Exit(1)
+        return
+
+    console.print(
+        f"[green]validated[/] resume variant {payload['resume_id']}  "
+        f"validation={payload['validation']['status']}"
+    )
+    for issue in payload["validation"]["issues"]:
+        console.print(f"    [red]{issue['code']}[/] {issue['message']}")
+    _render_resume_preview(payload)
+    if not payload["validation"]["ok"]:
+        raise typer.Exit(1)
+
+
 @resume_app.command("list")
 def resume_list(
     job_id: int | None = typer.Option(None, "--job-id"),
@@ -952,7 +1044,7 @@ def resume_list(
         return
 
     table = Table(title=f"resume variants ({len(rows)})")
-    for col in ("id", "job", "company", "fit", "decision", "validation", "created"):
+    for col in ("id", "job", "company", "fit", "decision", "validation", "page", "created"):
         table.add_column(col)
     for row in rows:
         table.add_row(
@@ -962,9 +1054,111 @@ def resume_list(
             f"{row['fit_score']:.0f}",
             row["tailoring_decision"],
             row["validation_status"],
+            row.get("page_validation_status") or "-",
             (row["created_at"] or "")[:16],
         )
     console.print(table)
+
+
+@resume_master_app.command("register")
+def resume_master_register(
+    path: str,
+    identity: str = typer.Option(master_resume_service.DEFAULT_MASTER_IDENTITY, "--identity"),
+    version: int = typer.Option(master_resume_service.DEFAULT_MASTER_VERSION, "--version"),
+    page_limit: int = typer.Option(master_resume_service.DEFAULT_PAGE_LIMIT, "--page-limit"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Register the canonical master resume PDF without modifying the original file."""
+    config, conn = _ctx()
+    try:
+        record = master_resume_service.register_master_resume(
+            conn,
+            config,
+            file_path=path,
+            identity=identity,
+            version=version,
+            page_limit=page_limit,
+            active=True,
+        )
+    except master_resume_service.MasterResumeError as exc:
+        console.print(f"[red]{exc}[/]")
+        raise typer.Exit(1)
+
+    payload = {
+        "master_resume": record.as_dict(),
+        "detected_sections": record.sections.get("sections_detected", []),
+        "section_counts": record.sections.get("section_counts", {}),
+    }
+    if _emit(payload, json_out):
+        return
+    console.print("[green]registered[/] master resume")
+    _render_master_resume(payload)
+
+
+@resume_master_app.command("show")
+def resume_master_show(json_out: bool = typer.Option(False, "--json")) -> None:
+    """Show the active canonical master resume and any stored extracted sections."""
+    _, conn = _ctx()
+    try:
+        record = master_resume_service.show_active_master_resume(conn)
+    except master_resume_service.MasterResumeError as exc:
+        console.print(f"[red]{exc}[/]")
+        raise typer.Exit(1)
+
+    payload = {
+        "master_resume": record.as_dict(),
+        "detected_sections": record.sections.get("sections_detected", []),
+        "section_counts": record.sections.get("section_counts", {}),
+    }
+    if _emit(payload, json_out):
+        return
+    _render_master_resume(payload)
+
+
+@resume_master_app.command("ingest")
+def resume_master_ingest(json_out: bool = typer.Option(False, "--json")) -> None:
+    """Extract and import the active master resume into the truth store deterministically."""
+    config, conn = _ctx()
+    try:
+        result = master_resume_service.ingest_active_master_resume(conn, config)
+    except master_resume_service.MasterResumeError as exc:
+        console.print(f"[red]{exc}[/]")
+        raise typer.Exit(1)
+
+    payload = result.as_dict()
+    if _emit(payload, json_out):
+        if payload["validation_errors"] or not payload["candidate_validation"]["ok"]:
+            raise typer.Exit(1)
+        return
+
+    console.print("[green]ingested[/] master resume")
+    _render_master_resume(payload)
+    console.print(
+        f"imported={payload['imported_count']}  deleted={payload['deleted_count']}  "
+        f"created={payload['created_count']}  "
+        f"updated={payload['updated_count']}  unchanged={payload['unchanged_count']}"
+    )
+    if payload["conflicts"]:
+        console.print("\n[bold]conflicts[/]")
+        for conflict in payload["conflicts"]:
+            console.print(
+                f"- {conflict['category']}:{conflict['key']} "
+                f"({conflict['reason']}; existing source={conflict['existing_source']})"
+            )
+    if payload["validation_errors"]:
+        console.print("\n[bold red]validation errors[/]")
+        for error in payload["validation_errors"]:
+            console.print(f"- {error}")
+    validation = payload["candidate_validation"]
+    console.print(
+        f"\ncandidate validation: {'[green]ok[/]' if validation['ok'] else '[red]errors[/]'} "
+        f"facts={validation['fact_count']} verified={validation['verified_fact_count']}"
+    )
+    if validation["issues"]:
+        for issue in validation["issues"]:
+            console.print(f"- {issue['level']} {issue['code']}: {issue['message']}")
+    if payload["validation_errors"] or not validation["ok"]:
+        raise typer.Exit(1)
 
 
 # --- digest ----------------------------------------------------------------
