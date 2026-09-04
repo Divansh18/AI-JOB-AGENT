@@ -1,0 +1,186 @@
+{
+  "version": 1,
+  "facts": [
+    {
+      "category": "personal/profile",
+      "key": "full_name",
+      "value": "Asha Example",
+      "source": "manual_verified",
+      "verified": true
+    },
+    {
+      "category": "personal/profile",
+      "key": "email",
+      "value": "asha@example.com",
+      "source": "manual_verified",
+      "verified": true
+    },
+    {
+      "category": "personal/profile",
+      "key": "phone",
+      "value": "+91 99999 88888",
+      "source": "resume_parser_draft",
+      "verified": false
+    },
+    {
+      "category": "personal/profile",
+      "key": "current_location",
+      "value": "Bengaluru, India",
+      "source": "manual_verified",
+      "verified": true
+    },
+    {
+      "category": "personal/profile",
+      "key": "experience_stage",
+      "value": "early_career",
+      "source": "manual_verified",
+      "verified": true
+    },
+    {
+      "category": "links",
+      "key": "linkedin_url",
+      "value": "https://www.linkedin.com/in/asha-example",
+      "source": "manual_verified",
+      "verified": true
+    },
+    {
+      "category": "links",
+      "key": "github_url",
+      "value": "https://github.com/asha-example",
+      "source": "manual_verified",
+      "verified": true
+    },
+    {
+      "category": "links",
+      "key": "portfolio_url",
+      "value": "https://asha.example.dev",
+      "source": "resume_parser_draft",
+      "verified": false
+    },
+    {
+      "category": "availability",
+      "key": "notice_period_days",
+      "value": 30,
+      "source": "manual_verified",
+      "verified": true
+    },
+    {
+      "category": "availability",
+      "key": "earliest_start_date",
+      "value": "2026-10-01",
+      "source": "manual_verified",
+      "verified": true
+    },
+    {
+      "category": "work_authorization",
+      "key": "summary",
+      "value": "Authorized to work in India. No other work authorization claimed.",
+      "source": "manual_verified",
+      "verified": true
+    },
+    {
+      "category": "location preferences",
+      "key": "relocation_willing",
+      "value": true,
+      "source": "manual_verified",
+      "verified": true
+    },
+    {
+      "category": "location preferences",
+      "key": "preferred_locations",
+      "value": ["Bengaluru", "Pune", "Remote India"],
+      "source": "manual_verified",
+      "verified": true
+    },
+    {
+      "category": "work experience",
+      "key": "acme_backend_intern",
+      "value": {
+        "company": "Acme Labs",
+        "title": "Backend Engineering Intern",
+        "location": "Bengaluru, India",
+        "start_date": "2025-01-06",
+        "end_date": "2025-06-30",
+        "summary": "Built internal API endpoints.",
+        "achievements": [
+          "Built Python and FastAPI APIs used by internal teams.",
+          "Reduced manual review time by automating status updates."
+        ]
+      },
+      "source": "resume_2026_09_03",
+      "verified": true
+    },
+    {
+      "category": "projects",
+      "key": "ai_jobsearch_agent",
+      "value": {
+        "name": "AI Job Search Agent",
+        "role": "Builder",
+        "summary": "Built a deterministic Python and SQLite job-search pipeline.",
+        "skills": ["python", "sqlite", "typer"],
+        "link": "https://github.com/example/ai-job-agent"
+      },
+      "source": "manual_verified",
+      "verified": true
+    },
+    {
+      "category": "education",
+      "key": "btech_cse",
+      "value": {
+        "institution": "Example Institute of Technology",
+        "degree": "B.Tech",
+        "field_of_study": "Computer Science",
+        "start_date": "2021-08-01",
+        "end_date": "2025-05-30"
+      },
+      "source": "resume_2026_09_03",
+      "verified": true
+    },
+    {
+      "category": "skills",
+      "key": "strong_skills",
+      "value": ["python", "fastapi", "react.js", "sqlite"],
+      "source": "manual_verified",
+      "verified": true
+    },
+    {
+      "category": "reusable achievements / evidence bullets",
+      "key": "backend_api_delivery",
+      "value": {
+        "bullet": "Built Python and FastAPI APIs used by internal teams.",
+        "tags": ["backend", "python", "fastapi"]
+      },
+      "source": "resume_2026_09_03",
+      "verified": true
+    }
+  ],
+  "answers": [
+    {
+      "question_key": "current_location",
+      "category": "profile_field",
+      "answer_text": "Bengaluru, India",
+      "verified": true,
+      "evidence_refs": ["personal_profile:current_location"],
+      "human_review_required": false,
+      "source": "manual_verified"
+    },
+    {
+      "question_key": "work_authorization",
+      "category": "attestation",
+      "answer_text": "Authorized to work in India.",
+      "verified": true,
+      "evidence_refs": ["work_authorization:summary"],
+      "human_review_required": true,
+      "source": "manual_verified"
+    },
+    {
+      "question_key": "salary_expectations",
+      "category": "attestation",
+      "answer_text": "I prefer to discuss compensation after understanding the role scope and level.",
+      "verified": false,
+      "evidence_refs": [],
+      "human_review_required": true,
+      "source": "manual_draft"
+    }
+  ]
+}

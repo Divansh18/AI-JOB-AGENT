@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Iterable
 
+from ..domain.candidate import CandidateFact, VerifiedAnswer
 from ..domain.models import Job
 from .db import iso, parse_dt, utcnow
 
@@ -37,6 +38,35 @@ def _row_to_job(row: sqlite3.Row) -> Job:
         posted_at=parse_dt(row["posted_at"]),
         first_seen_at=parse_dt(row["first_seen_at"]),
         raw=json.loads(row["raw"]) if row["raw"] else {},
+    )
+
+
+def _row_to_candidate_fact(row: sqlite3.Row) -> CandidateFact:
+    return CandidateFact(
+        id=row["id"],
+        category=row["category"],
+        key=row["fact_key"],
+        value=json.loads(row["value_json"]),
+        source=row["source"],
+        verified=bool(row["verified"]),
+        confidence=row["confidence"],
+        created_at=parse_dt(row["created_at"]),
+        updated_at=parse_dt(row["updated_at"]),
+    )
+
+
+def _row_to_candidate_answer(row: sqlite3.Row) -> VerifiedAnswer:
+    return VerifiedAnswer(
+        id=row["id"],
+        question_key=row["question_key"],
+        category=row["category"],
+        answer_text=row["answer_text"],
+        source=row["source"],
+        evidence_refs=json.loads(row["evidence_refs"]),
+        verified=bool(row["verified"]),
+        human_review_required=bool(row["human_review_required"]),
+        created_at=parse_dt(row["created_at"]),
+        updated_at=parse_dt(row["updated_at"]),
     )
 
 
@@ -416,6 +446,184 @@ class ApplicationRepo:
         rows = self.conn.execute(
             "SELECT status, COUNT(*) c FROM applications GROUP BY status").fetchall()
         return {r["status"]: r["c"] for r in rows}
+
+
+class CandidateFactRepo:
+    def __init__(self, conn: sqlite3.Connection):
+        self.conn = conn
+
+    def save(self, fact: CandidateFact) -> CandidateFact:
+        now = iso(utcnow())
+        self.conn.execute(
+            """
+            INSERT INTO candidate_facts
+                (category, fact_key, value_json, source, verified, confidence, created_at, updated_at)
+            VALUES (?,?,?,?,?,?,?,?)
+            ON CONFLICT(category, fact_key) DO UPDATE SET
+                value_json=excluded.value_json,
+                source=excluded.source,
+                verified=excluded.verified,
+                confidence=excluded.confidence,
+                updated_at=excluded.updated_at
+            """,
+            (
+                fact.category,
+                fact.key,
+                json.dumps(fact.value, ensure_ascii=True, sort_keys=True),
+                fact.source,
+                int(fact.verified),
+                fact.confidence,
+                now,
+                now,
+            ),
+        )
+        row = self.conn.execute(
+            "SELECT * FROM candidate_facts WHERE category=? AND fact_key=?",
+            (fact.category, fact.key),
+        ).fetchone()
+        return _row_to_candidate_fact(row)
+
+    def get(self, category: str, key: str) -> CandidateFact | None:
+        row = self.conn.execute(
+            "SELECT * FROM candidate_facts WHERE category=? AND fact_key=?",
+            (category, key),
+        ).fetchone()
+        return _row_to_candidate_fact(row) if row else None
+
+    def list(self, *, category: str | None = None, verified: bool | None = None) -> list[CandidateFact]:
+        sql = "SELECT * FROM candidate_facts WHERE 1=1"
+        params: list[Any] = []
+        if category:
+            sql += " AND category=?"
+            params.append(category)
+        if verified is not None:
+            sql += " AND verified=?"
+            params.append(int(verified))
+        sql += " ORDER BY category, fact_key"
+        return [_row_to_candidate_fact(r) for r in self.conn.execute(sql, tuple(params)).fetchall()]
+
+
+class CandidateAnswerRepo:
+    def __init__(self, conn: sqlite3.Connection):
+        self.conn = conn
+
+    def save(self, answer: VerifiedAnswer) -> VerifiedAnswer:
+        now = iso(utcnow())
+        self.conn.execute(
+            """
+            INSERT INTO candidate_answers
+                (question_key, category, answer_text, source, evidence_refs, verified,
+                 human_review_required, created_at, updated_at)
+            VALUES (?,?,?,?,?,?,?,?,?)
+            ON CONFLICT(question_key, category) DO UPDATE SET
+                answer_text=excluded.answer_text,
+                source=excluded.source,
+                evidence_refs=excluded.evidence_refs,
+                verified=excluded.verified,
+                human_review_required=excluded.human_review_required,
+                updated_at=excluded.updated_at
+            """,
+            (
+                answer.question_key,
+                answer.category,
+                answer.answer_text,
+                answer.source,
+                json.dumps(answer.evidence_refs, ensure_ascii=True, sort_keys=True),
+                int(answer.verified),
+                int(answer.human_review_required),
+                now,
+                now,
+            ),
+        )
+        row = self.conn.execute(
+            "SELECT * FROM candidate_answers WHERE question_key=? AND category=?",
+            (answer.question_key, answer.category),
+        ).fetchone()
+        return _row_to_candidate_answer(row)
+
+    def list(self, *, question_key: str | None = None, verified: bool | None = None) -> list[VerifiedAnswer]:
+        sql = "SELECT * FROM candidate_answers WHERE 1=1"
+        params: list[Any] = []
+        if question_key:
+            sql += " AND question_key=?"
+            params.append(question_key)
+        if verified is not None:
+            sql += " AND verified=?"
+            params.append(int(verified))
+        sql += " ORDER BY question_key, category"
+        return [_row_to_candidate_answer(r) for r in self.conn.execute(sql, tuple(params)).fetchall()]
+
+
+class ResumeVariantRepo:
+    def __init__(self, conn: sqlite3.Connection):
+        self.conn = conn
+
+    def create(
+        self,
+        *,
+        job_id: int,
+        fit_score: float,
+        source_truth_version: int,
+        source_truth_hash: str,
+        master_resume_identity: str,
+        master_resume_version: str,
+        template_identity: str,
+        page_limit: int,
+        tailoring_decision: str,
+        tailoring_reasons: list[str],
+        tailoring_evidence_refs: list[str],
+        content: dict[str, Any],
+        validation_status: str,
+        validation_errors: list[dict[str, Any]],
+    ) -> int:
+        cur = self.conn.execute(
+            """
+            INSERT INTO resume_variants
+                (job_id, created_at, fit_score, source_truth_version, source_truth_hash,
+                 master_resume_identity, master_resume_version, template_identity, page_limit,
+                 tailoring_decision, tailoring_reasons, tailoring_evidence_refs,
+                 content_json, validation_status, validation_errors)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            """,
+            (
+                job_id,
+                iso(utcnow()),
+                fit_score,
+                source_truth_version,
+                source_truth_hash,
+                master_resume_identity,
+                master_resume_version,
+                template_identity,
+                page_limit,
+                tailoring_decision,
+                json.dumps(tailoring_reasons, ensure_ascii=True, sort_keys=True),
+                json.dumps(tailoring_evidence_refs, ensure_ascii=True, sort_keys=True),
+                json.dumps(content, ensure_ascii=True, sort_keys=True),
+                validation_status,
+                json.dumps(validation_errors, ensure_ascii=True, sort_keys=True),
+            ),
+        )
+        return cur.lastrowid
+
+    def get(self, resume_id: int) -> sqlite3.Row | None:
+        return self.conn.execute(
+            "SELECT * FROM resume_variants WHERE id=?",
+            (resume_id,),
+        ).fetchone()
+
+    def list(self, *, job_id: int | None = None, limit: int = 20) -> list[sqlite3.Row]:
+        sql = """
+            SELECT rv.*, j.title, j.company_name_raw
+            FROM resume_variants rv
+            JOIN jobs j ON j.id = rv.job_id
+        """
+        params: list[Any] = []
+        if job_id is not None:
+            sql += " WHERE rv.job_id=?"
+            params.append(job_id)
+        sql += " ORDER BY rv.created_at DESC, rv.id DESC LIMIT ?"
+        params.append(limit)
+        return self.conn.execute(sql, tuple(params)).fetchall()
 
 
 class EventRepo:

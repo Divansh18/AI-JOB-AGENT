@@ -20,25 +20,35 @@ from ..config.loader import load_config, project_root
 from ..persistence.db import connect, migrate
 from ..persistence.repositories import (
     ApplicationRepo,
+    CandidateAnswerRepo,
+    CandidateFactRepo,
     CompanyRepo,
     EventRepo,
     FilterRepo,
     JobRepo,
     ScoreRepo,
 )
+from ..services import candidate as candidate_service
 from ..services import digest as digest_service
 from ..services import health as health_service
 from ..services import ledger as ledger_service
 from ..services import pipeline as pipeline_service
+from ..services import resume_intelligence as resume_service
 
 app = typer.Typer(add_completion=False, no_args_is_help=True,
                   help="Personal job discovery, ranking and application ledger.")
 companies_app = typer.Typer(no_args_is_help=True, help="Manage the target company list.")
 jobs_app = typer.Typer(no_args_is_help=True, help="Browse and manage jobs.")
 db_app = typer.Typer(no_args_is_help=True, help="Database maintenance.")
+candidate_app = typer.Typer(no_args_is_help=True, help="Manage the verified candidate truth store.")
+answers_app = typer.Typer(no_args_is_help=True, help="Manage reusable verified application answers.")
+resume_app = typer.Typer(no_args_is_help=True, help="Analyze fit and manage tailored resume variants.")
 app.add_typer(companies_app, name="companies")
 app.add_typer(jobs_app, name="jobs")
 app.add_typer(db_app, name="db")
+app.add_typer(candidate_app, name="candidate")
+app.add_typer(answers_app, name="answers")
+app.add_typer(resume_app, name="resume")
 
 console = Console()
 
@@ -55,6 +65,93 @@ def _emit(payload: dict, as_json: bool) -> bool:
         console.print_json(json.dumps(payload, default=str))
         return True
     return False
+
+
+def _parse_value(raw: str, json_value: bool):
+    if not json_value:
+        return raw
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError as exc:
+        console.print(f"[red]invalid JSON value[/] {exc}")
+        raise typer.Exit(1) from exc
+
+
+def _candidate_payload(conn) -> dict:
+    facts = [fact.as_dict() for fact in CandidateFactRepo(conn).list()]
+    answers = [answer.as_dict() for answer in CandidateAnswerRepo(conn).list()]
+    report = candidate_service.validate(conn)
+    return {
+        "profile": report.profile.as_dict(),
+        "facts": facts,
+        "answers": answers,
+        "validation": report.as_dict(),
+    }
+
+
+def _render_resume_preview(content: dict) -> None:
+    resume = content.get("resume") or content.get("tailored_resume") or content
+    recommendation = resume.get("recommendation") or {}
+    decision = recommendation.get("decision", "unknown")
+    reasons = recommendation.get("reasons") or []
+    changes = resume.get("changes") or []
+    master_resume = resume.get("master_resume") or {}
+    template = resume.get("template") or {}
+    page_limit = resume.get("page_limit")
+    page_status = resume.get("page_validation_status")
+
+    console.print(f"decision: {decision}")
+    if reasons:
+        for reason in reasons:
+            console.print(f"- {reason}")
+    if master_resume or template:
+        console.print(
+            "resume metadata: "
+            f"master={master_resume.get('identity', '-')}@{master_resume.get('version', '-')}, "
+            f"template={template.get('identity', '-')}, "
+            f"page_limit={page_limit or '-'}, "
+            f"page_status={page_status or '-'}"
+        )
+    if decision == "use_base":
+        console.print("resume action: keep the canonical master resume unchanged.")
+        return
+    if decision == "poor_fit":
+        console.print("resume action: do not tailor or manufacture unsupported claims.")
+        return
+    if changes:
+        console.print("\n[bold]planned changes[/]")
+        for change in changes:
+            console.print(f"- {change['section']}: {change['action']} {change['text']}")
+
+    preview = resume.get("preview") or {}
+    summary = preview.get("summary")
+    if summary:
+        console.print(f"\n[bold]summary[/]\n{summary['text']}")
+
+    skills = preview.get("skills") or []
+    if skills:
+        console.print(f"\n[bold]skills[/]\n{', '.join(item['skill'] for item in skills[:20])}")
+
+    experience = preview.get("experience") or []
+    if experience:
+        console.print("\n[bold]experience[/]")
+        for entry in experience[:4]:
+            dates = " - ".join(part for part in [entry.get("start_date"), entry.get("end_date")] if part) or "-"
+            console.print(f"- {entry['title']} @ {entry['company']} ({dates})")
+            if entry.get("summary"):
+                console.print(f"    {entry['summary']['text']}")
+            for bullet in entry.get("bullets", [])[:3]:
+                console.print(f"    • {bullet['text']}")
+
+    projects = preview.get("projects") or []
+    if projects:
+        console.print("\n[bold]projects[/]")
+        for entry in projects[:3]:
+            console.print(f"- {entry['name']}" + (f" ({entry['role']})" if entry.get("role") else ""))
+            if entry.get("summary"):
+                console.print(f"    {entry['summary']['text']}")
+            for bullet in entry.get("bullets", [])[:2]:
+                console.print(f"    • {bullet['text']}")
 
 
 # --- setup -----------------------------------------------------------------
@@ -86,6 +183,190 @@ def doctor(json_out: bool = typer.Option(False, "--json")) -> None:
     console.print(table)
     if any(l == "fail" for l, _, _ in checks):
         raise typer.Exit(1)
+
+
+# --- candidate truth store -------------------------------------------------
+
+
+@candidate_app.command("show")
+def candidate_show(json_out: bool = typer.Option(False, "--json")) -> None:
+    """Show the verified application profile and stored candidate facts."""
+    _, conn = _ctx()
+    payload = _candidate_payload(conn)
+    if _emit(payload, json_out):
+        return
+
+    profile = payload["profile"]
+    table = Table(title="application profile")
+    table.add_column("field")
+    table.add_column("value")
+    for field, value in profile.items():
+        if field == "provenance":
+            continue
+        rendered = "unset" if value is None else (
+            json.dumps(value) if isinstance(value, (list, dict)) else str(value)
+        )
+        table.add_row(field, rendered)
+    console.print(table)
+
+    facts = payload["facts"]
+    answers = payload["answers"]
+    validation = payload["validation"]
+    console.print(
+        f"\nfacts: {len(facts)} total, {validation['verified_fact_count']} verified"
+        f"\nanswers: {len(answers)} total, {validation['verified_answer_count']} verified"
+    )
+    if validation["issues"]:
+        issue_table = Table(title="validation issues")
+        issue_table.add_column("level")
+        issue_table.add_column("code")
+        issue_table.add_column("message")
+        for issue in validation["issues"]:
+            issue_table.add_row(issue["level"], issue["code"], issue["message"])
+        console.print(issue_table)
+    else:
+        console.print("\n[green]candidate truth store valid[/]")
+
+
+@candidate_app.command("add")
+def candidate_add(
+    category: str,
+    key: str,
+    value: str,
+    json_value: bool = typer.Option(False, "--json-value", help="Parse value as JSON"),
+    source: str = typer.Option("manual", "--source"),
+    verified: bool = typer.Option(False, "--verified/--unverified"),
+    confidence: float | None = typer.Option(None, "--confidence"),
+) -> None:
+    """Add or update one candidate fact."""
+    _, conn = _ctx()
+    try:
+        saved = candidate_service.add_fact(
+            conn,
+            category=category,
+            key=key,
+            value=_parse_value(value, json_value),
+            source=source,
+            verified=verified,
+            confidence=confidence,
+        )
+    except candidate_service.CandidateError as exc:
+        console.print(f"[red]{exc}[/]")
+        raise typer.Exit(1)
+    console.print(
+        f"[green]saved[/] fact {saved.id}: {saved.category}:{saved.key} "
+        f"({'verified' if saved.verified else 'unverified'})"
+    )
+
+
+@candidate_app.command("import-json")
+def candidate_import_json(path: Path = typer.Argument(..., exists=True)) -> None:
+    """Import versioned candidate facts and answers from JSON."""
+    _, conn = _ctx()
+    try:
+        result = candidate_service.import_json(conn, path)
+    except (candidate_service.CandidateError, json.JSONDecodeError) as exc:
+        console.print(f"[red]{exc}[/]")
+        raise typer.Exit(1)
+    console.print(
+        f"[green]imported[/] facts={result.facts_upserted} answers={result.answers_upserted}"
+    )
+    console.print(
+        f"    verified facts={result.report.verified_fact_count} "
+        f"verified answers={result.report.verified_answer_count}"
+    )
+
+
+@candidate_app.command("validate")
+def candidate_validate(json_out: bool = typer.Option(False, "--json")) -> None:
+    """Validate truth-store contents and the derived application profile."""
+    _, conn = _ctx()
+    report = candidate_service.validate(conn)
+    if _emit(report.as_dict(), json_out):
+        if not report.ok:
+            raise typer.Exit(1)
+        return
+    if report.ok:
+        console.print(
+            f"[green]valid[/] facts={report.fact_count} verified={report.verified_fact_count} "
+            f"answers={report.answer_count} verified_answers={report.verified_answer_count}"
+        )
+        return
+    table = Table(title="candidate validation")
+    table.add_column("level")
+    table.add_column("code")
+    table.add_column("message")
+    for issue in report.issues:
+        table.add_row(issue.level, issue.code, issue.message)
+    console.print(table)
+    raise typer.Exit(1)
+
+
+# --- answers ---------------------------------------------------------------
+
+
+@answers_app.command("list")
+def answers_list(
+    question_key: str = typer.Option(None, "--question-key"),
+    verified_only: bool = typer.Option(False, "--verified-only"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """List stored reusable application answers."""
+    _, conn = _ctx()
+    answers = candidate_service.list_answers(conn, question_key=question_key, verified_only=verified_only)
+    payload = {"answers": [answer.as_dict() for answer in answers]}
+    if _emit(payload, json_out):
+        return
+    table = Table(title=f"answers ({len(answers)})")
+    table.add_column("id")
+    table.add_column("question")
+    table.add_column("category")
+    table.add_column("verified")
+    table.add_column("review")
+    table.add_column("refs")
+    for answer in answers:
+        table.add_row(
+            str(answer.id or "-"),
+            answer.question_key,
+            answer.category,
+            "yes" if answer.verified else "no",
+            "yes" if answer.human_review_required else "no",
+            ", ".join(answer.evidence_refs) or "-",
+        )
+    console.print(table)
+
+
+@answers_app.command("add")
+def answers_add(
+    question_key: str,
+    answer_text: str,
+    category: str = typer.Option("general", "--category"),
+    source: str = typer.Option("manual", "--source"),
+    evidence_refs: list[str] = typer.Option(None, "--evidence-ref"),
+    verified: bool = typer.Option(False, "--verified/--unverified"),
+    human_review_required: bool = typer.Option(False, "--human-review/--no-human-review"),
+) -> None:
+    """Add or update one reusable answer."""
+    _, conn = _ctx()
+    try:
+        saved = candidate_service.add_answer(
+            conn,
+            question_key=question_key,
+            answer_text=answer_text,
+            category=category,
+            source=source,
+            evidence_refs=evidence_refs,
+            verified=verified,
+            human_review_required=human_review_required,
+        )
+    except candidate_service.CandidateError as exc:
+        console.print(f"[red]{exc}[/]")
+        raise typer.Exit(1)
+    console.print(
+        f"[green]saved[/] answer {saved.id}: {saved.question_key} "
+        f"({'verified' if saved.verified else 'unverified'}, "
+        f"review={'yes' if saved.human_review_required else 'no'})"
+    )
 
 
 # --- companies -------------------------------------------------------------
@@ -468,6 +749,83 @@ def jobs_show(job_id: int) -> None:
     console.print(f"\n[dim]{(job['description_text'] or '')[:1200]}...[/]")
 
 
+@jobs_app.command("analyze")
+def jobs_analyze(job_id: int, json_out: bool = typer.Option(False, "--json")) -> None:
+    """Analyze one existing job into a structured Phase 1B requirement profile."""
+    config, conn = _ctx()
+    try:
+        analysis = resume_service.deterministic_job_analysis(conn, config, job_id)
+    except resume_service.ResumeIntelligenceError as exc:
+        console.print(f"[red]{exc}[/]")
+        raise typer.Exit(1)
+
+    payload = {"analysis": analysis.as_dict()}
+    if _emit(payload, json_out):
+        return
+
+    console.print(f"[bold]{analysis.role_title}[/]  source={analysis.source}")
+    console.print(f"seniority: {analysis.seniority}")
+    location = analysis.location_remote_eligibility or {}
+    console.print(
+        f"location: {location.get('status', 'unknown')} / {location.get('bucket', 'unknown')} "
+        f"- {location.get('reason', 'unknown')}"
+    )
+    if analysis.required_skills:
+        console.print("required skills: " + ", ".join(analysis.required_skills))
+    if analysis.preferred_skills:
+        console.print("preferred skills: " + ", ".join(analysis.preferred_skills))
+    if analysis.minimum_experience_years is not None:
+        console.print(f"minimum experience: {analysis.minimum_experience_years:g}+ years")
+    if analysis.preferred_experience_years is not None:
+        console.print(f"preferred experience: {analysis.preferred_experience_years:g}+ years")
+    if analysis.education_requirements:
+        console.print("education: " + " | ".join(analysis.education_requirements[:3]))
+    if analysis.domain_signals:
+        console.print("domain signals: " + ", ".join(analysis.domain_signals))
+    if analysis.hard_blockers:
+        console.print("hard blockers: " + " | ".join(analysis.hard_blockers))
+    if analysis.notes:
+        console.print("notes: " + " | ".join(analysis.notes))
+
+
+@jobs_app.command("fit")
+def jobs_fit(job_id: int, json_out: bool = typer.Option(False, "--json")) -> None:
+    """Match one job against verified candidate evidence and score supportability."""
+    config, conn = _ctx()
+    try:
+        analysis = resume_service.deterministic_job_analysis(conn, config, job_id)
+        bundle = resume_service.fit_job(conn, config, job_id, analysis=analysis)
+    except resume_service.ResumeIntelligenceError as exc:
+        console.print(f"[red]{exc}[/]")
+        raise typer.Exit(1)
+
+    payload = bundle.as_dict()
+    if _emit(payload, json_out):
+        return
+
+    fit = bundle.fit_report
+    console.print(f"[bold]{analysis.role_title}[/]")
+    console.print(f"fit score: [bold]{fit.overall_fit_score}[/]  source={analysis.source}")
+    if fit.hard_blockers:
+        console.print("hard blockers: " + " | ".join(fit.hard_blockers))
+    if fit.strongest_matches:
+        console.print("\nstrongest matches:")
+        for match in fit.strongest_matches[:6]:
+            console.print(f"- {match.text} [{match.category}] ({match.explanation})")
+    if fit.partial_matches:
+        console.print("\npartials:")
+        for match in fit.partial_matches[:5]:
+            console.print(f"- {match.text} ({match.explanation})")
+    if fit.missing_requirements:
+        console.print("\nmissing:")
+        for match in fit.missing_requirements[:6]:
+            console.print(f"- {match.text} ({match.explanation})")
+    if fit.tailoring_recommendations:
+        console.print("\nrecommendations:")
+        for item in fit.tailoring_recommendations:
+            console.print(f"- {item}")
+
+
 @jobs_app.command("add")
 def jobs_add(url: str, company: str = typer.Option(None, "--company"),
              title: str = typer.Option(None, "--title"),
@@ -518,6 +876,95 @@ def jobs_open(job_id: int) -> None:
         raise typer.Exit(1)
     console.print(job["apply_url"])
     webbrowser.open(job["apply_url"])
+
+
+# --- resume ---------------------------------------------------------------
+
+
+@resume_app.command("tailor")
+def resume_tailor(job_id: int, json_out: bool = typer.Option(False, "--json")) -> None:
+    """Build and store one tailored resume preview from verified evidence only."""
+    config, conn = _ctx()
+    try:
+        analysis = resume_service.deterministic_job_analysis(conn, config, job_id)
+        result = resume_service.create_resume_variant(
+            conn,
+            config,
+            job_id,
+            analysis=analysis,
+        )
+    except resume_service.ResumeIntelligenceError as exc:
+        console.print(f"[red]{exc}[/]")
+        raise typer.Exit(1)
+
+    payload = result.as_dict()
+    if _emit(payload, json_out):
+        if not result.validation.ok:
+            raise typer.Exit(1)
+        return
+
+    console.print(
+        f"[green]saved[/] resume variant {result.resume_id}  "
+        f"fit={result.fit_report.overall_fit_score}  validation={result.validation.status}"
+    )
+    if result.validation.issues:
+        for issue in result.validation.issues:
+            console.print(f"    [red]{issue.code}[/] {issue.message}")
+    _render_resume_preview(result.as_dict())
+    if not result.validation.ok:
+        raise typer.Exit(1)
+
+
+@resume_app.command("show")
+def resume_show(resume_id: int, json_out: bool = typer.Option(False, "--json")) -> None:
+    """Show one stored resume variant."""
+    _, conn = _ctx()
+    try:
+        payload = resume_service.get_resume_variant(conn, resume_id)
+    except resume_service.ResumeIntelligenceError as exc:
+        console.print(f"[red]{exc}[/]")
+        raise typer.Exit(1)
+
+    if _emit(payload, json_out):
+        return
+
+    console.print(
+        f"[bold]resume variant {payload['id']}[/]  job={payload['job_id']}  "
+        f"fit={payload['fit_score']:.0f}  validation={payload['validation_status']}  "
+        f"decision={payload['tailoring_decision']}"
+    )
+    if payload["validation_errors"]:
+        for issue in payload["validation_errors"]:
+            console.print(f"    [red]{issue['code']}[/] {issue['message']}")
+    _render_resume_preview(payload["content_json"])
+
+
+@resume_app.command("list")
+def resume_list(
+    job_id: int | None = typer.Option(None, "--job-id"),
+    limit: int = typer.Option(20, "--limit"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """List stored resume variants."""
+    _, conn = _ctx()
+    rows = resume_service.list_resume_variants(conn, job_id=job_id, limit=limit)
+    if _emit({"resume_variants": rows}, json_out):
+        return
+
+    table = Table(title=f"resume variants ({len(rows)})")
+    for col in ("id", "job", "company", "fit", "decision", "validation", "created"):
+        table.add_column(col)
+    for row in rows:
+        table.add_row(
+            str(row["id"]),
+            str(row["job_id"]),
+            (row.get("company_name_raw") or "-")[:24],
+            f"{row['fit_score']:.0f}",
+            row["tailoring_decision"],
+            row["validation_status"],
+            (row["created_at"] or "")[:16],
+        )
+    console.print(table)
 
 
 # --- digest ----------------------------------------------------------------
