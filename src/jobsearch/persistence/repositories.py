@@ -565,6 +565,49 @@ class ApplicationPlanRepo:
         return self.conn.execute(sql, tuple(params)).fetchall()
 
 
+class ApplicationAutofillRunRepo:
+    def __init__(self, conn: sqlite3.Connection):
+        self.conn = conn
+
+    def create(self, result: dict[str, Any]) -> int:
+        cur = self.conn.execute(
+            """
+            INSERT INTO application_autofill_runs
+                (application_id, ats, url, status, result_json, fields_detected,
+                 fields_filled, unresolved_fields, sensitive_fields, resume_attached,
+                 human_intervention_required, errors, submitted, created_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            """,
+            (
+                result["application_id"],
+                result["ats"],
+                result["url"],
+                result["status"],
+                json.dumps(result, ensure_ascii=True, sort_keys=True),
+                json.dumps(result.get("fields_detected") or [], ensure_ascii=True, sort_keys=True),
+                json.dumps(result.get("fields_filled") or [], ensure_ascii=True, sort_keys=True),
+                json.dumps(result.get("unresolved_fields") or [], ensure_ascii=True, sort_keys=True),
+                json.dumps(result.get("sensitive_fields") or [], ensure_ascii=True, sort_keys=True),
+                int(result.get("resume_attached", False)),
+                int(result.get("human_intervention_required", True)),
+                json.dumps(result.get("errors") or [], ensure_ascii=True, sort_keys=True),
+                0,
+                iso(utcnow()),
+            ),
+        )
+        return cur.lastrowid
+
+    def list_by_application(self, application_id: int) -> list[sqlite3.Row]:
+        return self.conn.execute(
+            """
+            SELECT * FROM application_autofill_runs
+            WHERE application_id=?
+            ORDER BY created_at DESC, id DESC
+            """,
+            (application_id,),
+        ).fetchall()
+
+
 class CandidateFactRepo:
     def __init__(self, conn: sqlite3.Connection):
         self.conn = conn

@@ -396,6 +396,7 @@ LOCATION_SNIPPET_PATTERNS = [
     r"\banywhere in india\b",
     r"\banywhere in the world\b",
 ]
+DESCRIPTION_LOCATION_HEADER_CHARS = 700
 
 DIRECT_HYBRID_PATTERNS = [r"\bhybrid\b"]
 DIRECT_REMOTE_PATTERNS = [
@@ -563,7 +564,55 @@ def _description_location_snippets(description: str) -> list[str]:
             snippet = match.group(0).strip()
             if snippet and snippet not in snippets:
                 snippets.append(snippet[:120])
+    for snippet in _header_location_snippets(description):
+        if snippet and snippet not in snippets:
+            snippets.append(snippet[:120])
     return snippets[:6]
+
+
+def _header_location_snippets(description: str) -> list[str]:
+    """Extract ATS header location metadata when location_raw was not provided."""
+    header = _fold(description)[:DESCRIPTION_LOCATION_HEADER_CHARS]
+    if not header:
+        return []
+    snippets: list[str] = []
+
+    city_pattern = "|".join(re.escape(city) for city in sorted(INDIA_CITIES, key=len, reverse=True))
+    direct_patterns = [
+        rf"\b(?:{city_pattern})\s*,?\s*india\b(?:[^\n\r.]){{0,80}}",
+        r"\bremote\s*[-–,/()]?\s*india\b(?:[^\n\r.]){0,80}",
+        r"\bindia\s*[-–,/()]?\s*remote\b(?:[^\n\r.]){0,80}",
+        r"\banywhere in india\b(?:[^\n\r.]){0,80}",
+    ]
+    for pattern in direct_patterns:
+        for match in re.finditer(pattern, header):
+            _add_header_snippet(snippets, match.group(0))
+
+    for _, patterns in COUNTRY_PATTERNS:
+        for pattern in patterns:
+            for match in re.finditer(pattern, header):
+                _add_header_snippet(
+                    snippets,
+                    header[max(0, match.start() - 40) : min(len(header), match.end() + 80)],
+                )
+    for _, patterns in REGION_PATTERNS:
+        for pattern in patterns:
+            for match in re.finditer(pattern, header):
+                _add_header_snippet(
+                    snippets,
+                    header[max(0, match.start() - 40) : min(len(header), match.end() + 80)],
+                )
+    return snippets
+
+
+def _add_header_snippet(snippets: list[str], value: str) -> None:
+    snippet = _clean_header_snippet(value)
+    if snippet and snippet not in snippets:
+        snippets.append(snippet)
+
+
+def _clean_header_snippet(value: str) -> str:
+    return re.sub(r"\s+", " ", (value or "").strip(" -–—/,\t\r\n"))
 
 
 def _location_is_generic(location: str) -> bool:
@@ -578,6 +627,15 @@ def detect_remote_type(title: str, location: str, description: str) -> RemoteTyp
         return RemoteType.REMOTE
     if any(re.search(p, direct) for p in DIRECT_ONSITE_PATTERNS):
         return RemoteType.ONSITE
+
+    if _location_is_generic(location):
+        header_snippets = " ".join(_header_location_snippets(description))
+        if any(re.search(p, header_snippets) for p in DIRECT_HYBRID_PATTERNS):
+            return RemoteType.HYBRID
+        if any(re.search(p, header_snippets) for p in DIRECT_REMOTE_PATTERNS):
+            return RemoteType.REMOTE
+        if any(re.search(p, header_snippets) for p in DIRECT_ONSITE_PATTERNS):
+            return RemoteType.ONSITE
 
     snippets = " ".join(_description_location_snippets(description))
     if any(re.search(p, snippets) for p in DESCRIPTION_HYBRID_PATTERNS):

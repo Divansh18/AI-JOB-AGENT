@@ -210,6 +210,62 @@
     }
   },
   {
+    "name": "manual_header_bangalore_india_onsite",
+    "title": "SDE I",
+    "location_raw": "",
+    "description_text": "SDE I Bangalore, India Engineering - Backend / Full time / On-site apply for this job. Build REST API components.",
+    "expected": {
+      "country": "IN",
+      "remote_type": "onsite",
+      "remote_scope": "unknown",
+      "passed": true,
+      "rule": null,
+      "bucket": "india_city"
+    }
+  },
+  {
+    "name": "manual_header_bengaluru_india_hybrid",
+    "title": "Backend Engineer",
+    "location_raw": "",
+    "description_text": "Backend Engineer Bengaluru, India Engineering / Full time / Hybrid apply for this job. Build backend services.",
+    "expected": {
+      "country": "IN",
+      "remote_type": "hybrid",
+      "remote_scope": "unknown",
+      "passed": true,
+      "rule": null,
+      "bucket": "india_city"
+    }
+  },
+  {
+    "name": "manual_header_remote_india",
+    "title": "Software Engineer",
+    "location_raw": "",
+    "description_text": "Software Engineer Remote India Engineering / Full time / Remote apply for this job. Build product systems.",
+    "expected": {
+      "country": "IN",
+      "remote_type": "remote",
+      "remote_scope": "india",
+      "passed": true,
+      "rule": null,
+      "bucket": "india_remote"
+    }
+  },
+  {
+    "name": "manual_header_bangkok_foreign_only",
+    "title": "Software Engineer",
+    "location_raw": "",
+    "description_text": "Software Engineer Bangkok Engineering / Full time / On-site apply for this job. Build product systems.",
+    "expected": {
+      "country": "TH",
+      "remote_type": "onsite",
+      "remote_scope": "unknown",
+      "passed": false,
+      "rule": "country",
+      "bucket": "foreign_office"
+    }
+  },
+  {
     "name": "argentina_uruguay_multi_location_is_excluded",
     "title": "Software Engineer, Robotics",
     "location_raw": "Argentina; Uruguay",

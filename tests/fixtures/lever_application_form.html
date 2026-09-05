@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<body>
+  <form class="application-form" action="/apply">
+    <label for="name">Full name</label>
+    <input id="name" name="name" required>
+
+    <label for="email">Email</label>
+    <input id="email" name="email" type="email" required>
+
+    <label for="phone">Phone</label>
+    <input id="phone" name="phone" type="tel">
+
+    <label for="urls_LinkedIn">LinkedIn</label>
+    <input id="urls_LinkedIn" name="urls[LinkedIn]">
+
+    <label for="urls_GitHub">GitHub</label>
+    <input id="urls_GitHub" name="urls[GitHub]">
+
+    <label for="urls_Portfolio">Portfolio</label>
+    <input id="urls_Portfolio" name="urls[Portfolio]">
+
+    <label for="location">Current Location</label>
+    <input id="location" name="location">
+
+    <label for="resume">Resume/CV</label>
+    <input id="resume" name="resume" type="file">
+
+    <label for="question_1">Why are you interested in this role?</label>
+    <textarea id="question_1" name="comments"></textarea>
+
+    <label for="question_2">Will you require visa sponsorship?</label>
+    <select id="question_2" name="sponsorship">
+      <option value="">Select...</option>
+      <option value="Yes">Yes</option>
+      <option value="No">No</option>
+    </select>
+
+    <button type="submit">Submit application</button>
+  </form>
+</body>
+</html>

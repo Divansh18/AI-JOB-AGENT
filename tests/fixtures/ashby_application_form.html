@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<body>
+  <form data-testid="application-form" action="/apply">
+    <label for="ashby_name">Name</label>
+    <input id="ashby_name" name="name" required>
+
+    <label for="ashby_email">Email</label>
+    <input id="ashby_email" name="email" type="email" required>
+
+    <label for="ashby_phone">Phone</label>
+    <input id="ashby_phone" name="phone" type="tel">
+
+    <label for="ashby_linkedin">LinkedIn</label>
+    <input id="ashby_linkedin" name="linkedinUrl">
+
+    <label for="ashby_github">GitHub</label>
+    <input id="ashby_github" name="githubUrl">
+
+    <label for="ashby_website">Website</label>
+    <input id="ashby_website" name="website">
+
+    <label for="ashby_location">Location</label>
+    <input id="ashby_location" name="location">
+
+    <label for="ashby_resume">Resume</label>
+    <input id="ashby_resume" name="resume" type="file">
+
+    <label for="ashby_summary">Briefly describe your experience</label>
+    <textarea id="ashby_summary" name="applicationAnswers[0]"></textarea>
+
+    <label for="ashby_authorized">Are you authorized to work in this country?</label>
+    <select id="ashby_authorized" name="workAuthorization">
+      <option value="">Select...</option>
+      <option value="Yes">Yes</option>
+      <option value="No">No</option>
+    </select>
+
+    <button type="submit">Submit Application</button>
+  </form>
+</body>
+</html>

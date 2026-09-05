@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<body>
+  <form id="application_form" action="/submit">
+    <label for="first_name">First Name</label>
+    <input id="first_name" name="job_application[first_name]" required>
+
+    <label for="last_name">Last Name</label>
+    <input id="last_name" name="job_application[last_name]" required>
+
+    <label for="email">Email</label>
+    <input id="email" name="job_application[email]" type="email" required>
+
+    <label for="phone">Phone</label>
+    <input id="phone" name="job_application[phone]" type="tel">
+
+    <label for="job_application_answers_attributes_0_text_value">LinkedIn Profile</label>
+    <input id="job_application_answers_attributes_0_text_value" name="job_application[answers_attributes][0][text_value]">
+
+    <label for="job_application_answers_attributes_1_text_value">GitHub</label>
+    <input id="job_application_answers_attributes_1_text_value" name="job_application[answers_attributes][1][text_value]">
+
+    <label for="job_application_answers_attributes_2_text_value">Current Location</label>
+    <input id="job_application_answers_attributes_2_text_value" name="job_application[answers_attributes][2][text_value]">
+
+    <label for="resume">Resume/CV</label>
+    <input id="resume" name="job_application[resume]" type="file">
+
+    <label for="job_application_answers_attributes_3_text_value">Why are you interested in this role?</label>
+    <textarea id="job_application_answers_attributes_3_text_value" name="job_application[answers_attributes][3][text_value]"></textarea>
+
+    <label for="job_application_answers_attributes_4_boolean_value">Will you now or in the future require visa sponsorship?</label>
+    <select id="job_application_answers_attributes_4_boolean_value" name="job_application[answers_attributes][4][boolean_value]">
+      <option value="">Select...</option>
+      <option value="Yes">Yes</option>
+      <option value="No">No</option>
+    </select>
+
+    <button type="submit">Submit Application</button>
+  </form>
+</body>
+</html>

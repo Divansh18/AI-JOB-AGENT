@@ -5,6 +5,9 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from ..domain.extract import (
+    LocationFacts,
+    RemoteScope,
+    RemoteType,
     extract_location_facts,
     extract_employment_type,
 )
@@ -26,11 +29,11 @@ def normalize_posting(posting: RawPosting, *, now: datetime | None = None) -> Jo
     description = posting.description_text or html_to_text(posting.description_html or "")
     description = description[:MAX_DESCRIPTION_CHARS]
 
+    location = extract_location_facts(posting.title, posting.location_raw, description)
+    location_raw = _display_location_raw(posting.location_raw, location)
     title_norm = normalize_title(posting.title)
     company_norm = normalize_company(posting.company_name)
-    loc_norm = normalize_location(posting.location_raw)
-
-    location = extract_location_facts(posting.title, posting.location_raw, description)
+    loc_norm = normalize_location(location_raw)
     employment = extract_employment_type(posting.title, description, posting.employment_hint)
 
     fingerprint = identity_fingerprint(
@@ -43,13 +46,13 @@ def normalize_posting(posting: RawPosting, *, now: datetime | None = None) -> Jo
 
     return Job(
         fingerprint=fingerprint,
-        content_hash=content_hash(posting.title, description, posting.location_raw),
+        content_hash=content_hash(posting.title, description, location_raw),
         source=posting.source,
         title=posting.title.strip(),
         title_normalized=title_norm,
         company_name_raw=posting.company_name.strip(),
         company_normalized=company_norm,
-        location_raw=posting.location_raw.strip(),
+        location_raw=location_raw,
         locations=location.cities,
         country=location.country,
         remote_type=location.remote_type.value,
@@ -64,3 +67,20 @@ def normalize_posting(posting: RawPosting, *, now: datetime | None = None) -> Jo
         company_id=posting.company_id,
         raw=posting.raw,
     )
+
+
+def _display_location_raw(location_raw: str, location: LocationFacts) -> str:
+    existing = (location_raw or "").strip()
+    if existing:
+        return existing
+    if (
+        location.remote_type == RemoteType.REMOTE
+        and location.remote_scope == RemoteScope.INDIA
+        and "IN" in location.countries
+    ):
+        return "Remote India"
+    if location.cities and "IN" in location.countries:
+        return f"{location.cities[0]}, India"
+    if "IN" in location.countries:
+        return "India"
+    return ""

@@ -29,6 +29,7 @@ from ..persistence.repositories import (
     ScoreRepo,
 )
 from ..services import application_planner as application_planner_service
+from ..services import application_autofill as application_autofill_service
 from ..services import candidate as candidate_service
 from ..services import digest as digest_service
 from ..services import health as health_service
@@ -236,6 +237,41 @@ def _render_application_plan(payload: dict) -> None:
         console.print("\n[bold]human-review fields[/]")
         for field in sensitive:
             console.print(f"- {field['label']}: {field['status']}")
+
+
+def _render_autofill_result(payload: dict) -> None:
+    console.print(
+        f"[bold]autofill run #{payload.get('autofill_run_id', '-')}[/]  "
+        f"application={payload['application_id']}  ats={payload['ats']}  "
+        f"status={payload['status']}"
+    )
+    console.print(f"url: {payload['url']}")
+    console.print(
+        f"detected={len(payload.get('fields_detected') or [])}  "
+        f"filled={len(payload.get('fields_filled') or [])}  "
+        f"resume={'attached' if payload.get('resume_attached') else 'not attached'}  "
+        f"submitted={'yes' if payload.get('submitted') else 'no'}"
+    )
+    if payload.get("fields_filled"):
+        console.print("\n[bold]filled fields[/]")
+        for field in payload["fields_filled"]:
+            console.print(f"- {field}")
+    if payload.get("unresolved_fields"):
+        console.print("\n[bold yellow]unresolved fields[/]")
+        for field in payload["unresolved_fields"]:
+            label = field.get("label") or field.get("name") or field.get("key") or "-"
+            console.print(f"- {label}: {field.get('reason')}")
+    if payload.get("sensitive_fields"):
+        console.print("\n[bold]human-review fields[/]")
+        for field in payload["sensitive_fields"]:
+            label = field.get("label") or field.get("name") or field.get("key") or "-"
+            console.print(f"- {label}: {field.get('reason')}")
+    if payload.get("errors"):
+        console.print("\n[bold red]errors[/]")
+        for error in payload["errors"]:
+            console.print(f"- {error}")
+    if payload.get("human_intervention_required"):
+        console.print("\n[yellow]human review required before any submission[/]")
 
 
 # --- setup -----------------------------------------------------------------
@@ -1314,6 +1350,29 @@ def apply_list(
             (row["updated_at"] or "")[:16],
         )
     console.print(table)
+
+
+@apply_app.command("autofill")
+def apply_autofill(
+    application_id: int,
+    headless: bool = typer.Option(False, "--headless", help="Run without a visible browser for diagnostics."),
+    no_wait: bool = typer.Option(False, "--no-wait", help="Close the browser immediately after autofill."),
+    timeout_ms: int = typer.Option(30000, "--timeout-ms"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Open a supported ATS form, fill safe fields, attach resume, and stop."""
+    config, conn = _ctx()
+    payload = application_autofill_service.run_attended_autofill(
+        conn,
+        config,
+        application_id,
+        headless=headless,
+        wait_for_review=not no_wait,
+        timeout_ms=timeout_ms,
+    )
+    if _emit(payload, json_out):
+        return
+    _render_autofill_result(payload)
 
 
 @app.command()
