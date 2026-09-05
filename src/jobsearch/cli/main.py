@@ -28,6 +28,7 @@ from ..persistence.repositories import (
     JobRepo,
     ScoreRepo,
 )
+from ..services import application_planner as application_planner_service
 from ..services import candidate as candidate_service
 from ..services import digest as digest_service
 from ..services import health as health_service
@@ -46,12 +47,14 @@ candidate_app = typer.Typer(no_args_is_help=True, help="Manage the verified cand
 answers_app = typer.Typer(no_args_is_help=True, help="Manage reusable verified application answers.")
 resume_app = typer.Typer(no_args_is_help=True, help="Analyze fit and manage tailored resume variants.")
 resume_master_app = typer.Typer(no_args_is_help=True, help="Register and ingest the canonical master resume.")
+apply_app = typer.Typer(no_args_is_help=True, help="Plan and track attended applications.")
 app.add_typer(companies_app, name="companies")
 app.add_typer(jobs_app, name="jobs")
 app.add_typer(db_app, name="db")
 app.add_typer(candidate_app, name="candidate")
 app.add_typer(answers_app, name="answers")
 app.add_typer(resume_app, name="resume")
+app.add_typer(apply_app, name="apply")
 resume_app.add_typer(resume_master_app, name="master")
 
 console = Console()
@@ -184,6 +187,55 @@ def _render_master_resume(record_payload: dict) -> None:
             "section counts: "
             + ", ".join(f"{name}={count}" for name, count in counts.items() if count)
         )
+
+
+def _render_application_plan(payload: dict) -> None:
+    console.print(
+        f"[bold]application #{payload['application_id']}[/]  "
+        f"job={payload['job_id']}  state={payload['state']}  "
+        f"review={'yes' if payload['review_required'] else 'no'}"
+    )
+    console.print(f"{payload['company']} - {payload['role']}")
+    console.print(f"url: {payload['application_url'] or '-'}")
+    console.print(
+        "resume: "
+        f"{payload.get('resume_path') or '-'}  "
+        f"id={payload.get('resume_id') or '-'}  "
+        f"decision={payload.get('resume_decision') or '-'}  "
+        f"pages={payload.get('resume_page_count') or '-'}  "
+        f"status={payload.get('resume_page_validation_status') or '-'}"
+    )
+
+    blockers = payload.get("blockers") or []
+    if blockers:
+        console.print("\n[bold red]blockers[/]")
+        for item in blockers:
+            console.print(f"- {item}")
+
+    fields = payload.get("candidate_fields") or []
+    if fields:
+        console.print("\n[bold]auto-fillable fields[/]")
+        for field in fields:
+            console.print(f"- {field['label']}: {field['value']}")
+
+    answers = payload.get("known_answers") or []
+    if answers:
+        console.print("\n[bold]known answers[/]")
+        for answer in answers:
+            suffix = " [review]" if answer.get("human_review_required") else ""
+            console.print(f"- {answer['question_key']}: {answer['answer_text']}{suffix}")
+
+    unresolved = payload.get("unanswered_fields") or []
+    if unresolved:
+        console.print("\n[bold yellow]unresolved fields[/]")
+        for field in unresolved:
+            console.print(f"- {field['label']}: {field['reason']}")
+
+    sensitive = payload.get("sensitive_fields") or []
+    if sensitive:
+        console.print("\n[bold]human-review fields[/]")
+        for field in sensitive:
+            console.print(f"- {field['label']}: {field['status']}")
 
 
 # --- setup -----------------------------------------------------------------
@@ -1186,9 +1238,9 @@ def digest(top: int = typer.Option(0, "--top"),
 # --- ledger ----------------------------------------------------------------
 
 
-@app.command()
-def apply(job_id: int, channel: str = typer.Option(None, "--channel"),
-          note: str = typer.Option(None, "--note")) -> None:
+@apply_app.command("record")
+def apply_record(job_id: int, channel: str = typer.Option(None, "--channel"),
+                 note: str = typer.Option(None, "--note")) -> None:
     """Record that you applied to a job."""
     _, conn = _ctx()
     try:
@@ -1197,6 +1249,71 @@ def apply(job_id: int, channel: str = typer.Option(None, "--channel"),
         console.print(f"[red]{exc}[/]")
         raise typer.Exit(1)
     console.print(f"[green]recorded[/] application #{app_id} for job {job_id}")
+
+
+@apply_app.command("plan")
+def apply_plan(
+    job_id: int,
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Create or refresh an attended application plan for a job."""
+    config, conn = _ctx()
+    try:
+        payload = application_planner_service.plan_application(conn, config, job_id)
+    except application_planner_service.ApplicationPlannerError as exc:
+        console.print(f"[red]{exc}[/]")
+        raise typer.Exit(1)
+
+    if _emit(payload, json_out):
+        return
+    _render_application_plan(payload)
+
+
+@apply_app.command("show")
+def apply_show(
+    application_id: int,
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Show a stored application plan."""
+    _, conn = _ctx()
+    try:
+        payload = application_planner_service.get_application_plan(conn, application_id)
+    except application_planner_service.ApplicationPlannerError as exc:
+        console.print(f"[red]{exc}[/]")
+        raise typer.Exit(1)
+
+    if _emit(payload, json_out):
+        return
+    _render_application_plan(payload)
+
+
+@apply_app.command("list")
+def apply_list(
+    state: str | None = typer.Option(None, "--state"),
+    limit: int = typer.Option(50, "--limit"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """List stored application plans."""
+    _, conn = _ctx()
+    rows = application_planner_service.list_application_plans(conn, state=state, limit=limit)
+    if _emit({"applications": rows}, json_out):
+        return
+    table = Table(title=f"application plans ({len(rows)})")
+    for col in ("app", "job", "role", "company", "plan", "review", "unresolved", "blockers", "updated"):
+        table.add_column(col)
+    for row in rows:
+        table.add_row(
+            str(row["application_id"]),
+            str(row["job_id"]),
+            row["role"][:34],
+            row["company"][:22],
+            row["state"],
+            "yes" if row["review_required"] else "no",
+            str(row["unanswered_count"]),
+            str(len(row["blockers"])),
+            (row["updated_at"] or "")[:16],
+        )
+    console.print(table)
 
 
 @app.command()

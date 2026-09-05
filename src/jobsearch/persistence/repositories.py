@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Iterable
 
+from ..domain.application_planner import ApplicationPlan
 from ..domain.candidate import CandidateFact, VerifiedAnswer
 from ..domain.master_resume import MasterResumeRecord
 from ..domain.models import Job
@@ -361,7 +362,7 @@ class ScoreRepo:
         """
         params: list[Any] = [stage, min_score]
         if exclude_applied:
-            sql += " AND j.id NOT IN (SELECT job_id FROM applications)"
+            sql += " AND j.id NOT IN (SELECT job_id FROM applications WHERE status != 'to_apply')"
         if since:
             sql += " AND j.first_seen_at >= ?"
             params.append(since)
@@ -425,6 +426,41 @@ class ApplicationRepo:
         self.add_event(app_id, None, status, notes)
         return app_id
 
+    def ensure_for_plan(self, job_id: int) -> int:
+        existing = self.get_by_job(job_id)
+        if existing is not None:
+            return int(existing["id"])
+        now = iso(utcnow())
+        cur = self.conn.execute(
+            """INSERT INTO applications (job_id, status, applied_at, channel, notes,
+                                         created_at, updated_at)
+               VALUES (?,?,?,?,?,?,?)""",
+            (job_id, "to_apply", None, None, "application plan created", now, now),
+        )
+        app_id = cur.lastrowid
+        self.add_event(app_id, None, "to_apply", "application plan created")
+        return app_id
+
+    def mark_existing_applied(
+        self,
+        app_id: int,
+        *,
+        channel: str | None = None,
+        notes: str | None = None,
+        applied_at: datetime | None = None,
+    ) -> None:
+        old = self.get(app_id)
+        now = iso(utcnow())
+        applied = iso(applied_at) if applied_at else now
+        self.conn.execute(
+            """UPDATE applications
+                  SET status='applied', applied_at=?, channel=COALESCE(?, channel),
+                      notes=COALESCE(?, notes), updated_at=?
+                WHERE id=?""",
+            (applied, channel, notes, now, app_id),
+        )
+        self.add_event(app_id, old["status"] if old else None, "applied", notes)
+
     def update_status(self, app_id: int, new_status: str, note: str | None = None) -> None:
         old = self.get(app_id)
         self.conn.execute(
@@ -464,6 +500,69 @@ class ApplicationRepo:
         rows = self.conn.execute(
             "SELECT status, COUNT(*) c FROM applications GROUP BY status").fetchall()
         return {r["status"]: r["c"] for r in rows}
+
+
+class ApplicationPlanRepo:
+    def __init__(self, conn: sqlite3.Connection):
+        self.conn = conn
+
+    def upsert(self, plan: ApplicationPlan) -> None:
+        payload = json.dumps(plan.as_dict(), ensure_ascii=True, sort_keys=True)
+        self.conn.execute(
+            """
+            INSERT INTO application_plans
+                (application_id, job_id, state, plan_json, resume_variant_id,
+                 resume_path, review_required, created_at, updated_at)
+            VALUES (?,?,?,?,?,?,?,?,?)
+            ON CONFLICT(application_id) DO UPDATE SET
+                job_id=excluded.job_id,
+                state=excluded.state,
+                plan_json=excluded.plan_json,
+                resume_variant_id=excluded.resume_variant_id,
+                resume_path=excluded.resume_path,
+                review_required=excluded.review_required,
+                updated_at=excluded.updated_at
+            """,
+            (
+                plan.application_id,
+                plan.job_id,
+                plan.state,
+                payload,
+                plan.resume_id,
+                plan.resume_path,
+                int(plan.review_required),
+                iso(plan.created_at),
+                iso(plan.updated_at),
+            ),
+        )
+
+    def get_by_application(self, application_id: int) -> sqlite3.Row | None:
+        return self.conn.execute(
+            "SELECT * FROM application_plans WHERE application_id=?",
+            (application_id,),
+        ).fetchone()
+
+    def get_by_job(self, job_id: int) -> sqlite3.Row | None:
+        return self.conn.execute(
+            "SELECT * FROM application_plans WHERE job_id=?",
+            (job_id,),
+        ).fetchone()
+
+    def list(self, *, state: str | None = None, limit: int = 50) -> list[sqlite3.Row]:
+        sql = """
+            SELECT ap.*, j.title, j.company_name_raw, j.apply_url,
+                   a.status AS application_status
+            FROM application_plans ap
+            JOIN jobs j ON j.id = ap.job_id
+            JOIN applications a ON a.id = ap.application_id
+        """
+        params: list[Any] = []
+        if state:
+            sql += " WHERE ap.state=?"
+            params.append(state)
+        sql += " ORDER BY ap.updated_at DESC, ap.id DESC LIMIT ?"
+        params.append(limit)
+        return self.conn.execute(sql, tuple(params)).fetchall()
 
 
 class CandidateFactRepo:

@@ -23,27 +23,45 @@ def mark_applied(conn, job_id: int, *, channel: str | None = None,
 
     existing = app_repo.get_by_job(job_id)
     if existing is not None:
-        raise LedgerError(
-            f"already recorded as application #{existing['id']} "
-            f"(status={existing['status']}, at {existing['applied_at']})"
-        )
+        if existing["status"] != ApplicationStatus.TO_APPLY.value or existing["applied_at"]:
+            raise LedgerError(
+                f"already recorded as application #{existing['id']} "
+                f"(status={existing['status']}, at {existing['applied_at']})"
+            )
 
     # Guard against applying twice to the same role via a duplicate record.
     dup = conn.execute(
         """SELECT a.id, a.status, j.title FROM job_duplicates d
            JOIN applications a ON a.job_id IN (d.canonical_job_id, d.duplicate_job_id)
            JOIN jobs j ON j.id = a.job_id
-           WHERE d.canonical_job_id=? OR d.duplicate_job_id=?""",
-        (job_id, job_id),
+           WHERE (d.canonical_job_id=? OR d.duplicate_job_id=?)
+             AND a.status != ?
+             AND (? IS NULL OR a.id != ?)""",
+        (
+            job_id,
+            job_id,
+            ApplicationStatus.TO_APPLY.value,
+            existing["id"] if existing is not None else None,
+            existing["id"] if existing is not None else None,
+        ),
     ).fetchone()
     if dup is not None:
         raise LedgerError(
             f"a duplicate of this posting is already application #{dup['id']} ({dup['title']})"
         )
 
-    app_id = app_repo.create(job_id, ApplicationStatus.APPLIED.value,
-                             channel=channel, notes=notes,
-                             applied_at=datetime.now(timezone.utc))
+    if existing is not None:
+        app_id = int(existing["id"])
+        app_repo.mark_existing_applied(
+            app_id,
+            channel=channel,
+            notes=notes,
+            applied_at=datetime.now(timezone.utc),
+        )
+    else:
+        app_id = app_repo.create(job_id, ApplicationStatus.APPLIED.value,
+                                 channel=channel, notes=notes,
+                                 applied_at=datetime.now(timezone.utc))
     job_repo.set_status(job_id, "applied")
     Audit(conn).human("application_recorded", "application", app_id,
                       job_id=job_id, title=job["title"], company=job["company_name_raw"])

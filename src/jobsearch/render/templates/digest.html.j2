@@ -84,7 +84,7 @@ tr:last-child td{border-bottom:none}
     {% if c.employment_type != 'full_time' %}<span class="chip">{{ c.employment_type }}</span>{% endif %}
   </div>
   <div class="snip">{{ c.snippet }}</div>
-  <div><span class="cmd">jobsearch apply {{ c.job_id }}</span>
+  <div><span class="cmd">jobsearch apply plan {{ c.job_id }}</span>
    &nbsp;<a class="apply" href="{{ c.apply_url }}" target="_blank" rel="noopener">Open posting →</a></div>
 </div>
 {% endmacro %}
@@ -126,7 +126,8 @@ tr:last-child td{border-bottom:none}
 <div class="foot">
 <code>jobsearch pipeline run</code> refresh ·
 <code>jobsearch jobs show &lt;id&gt;</code> full JD ·
-<code>jobsearch apply &lt;id&gt;</code> record ·
+<code>jobsearch apply plan &lt;id&gt;</code> plan ·
+<code>jobsearch apply record &lt;id&gt;</code> record ·
 <code>jobsearch status &lt;id&gt; recruiter_reply</code> update ·
 <code>jobsearch jobs dismiss &lt;id&gt; --reason "..."</code>
 </div>

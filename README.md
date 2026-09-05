@@ -35,7 +35,8 @@ Daily cron:
 jobsearch pipeline run              # fetch, dedupe, filter, rank
 jobsearch digest --open             # read the digest
 jobsearch jobs show <id>            # full JD + score breakdown
-jobsearch apply <id>                # record an application
+jobsearch apply plan <id>           # create an attended application plan
+jobsearch apply record <id>         # record a completed application
 jobsearch status <id> recruiter_reply
 jobsearch stats                     # funnel + response rate
 ```
