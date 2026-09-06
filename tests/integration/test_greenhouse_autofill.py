@@ -474,6 +474,68 @@ def test_ashby_adapter_fills_safe_fields_safe_custom_answer_and_stops_before_sub
     assert payload["resume_attached"] is True
 
 
+@pytest.mark.parametrize("review_status", ("pending_review", "rejected"))
+def test_unapproved_or_rejected_llm_answer_is_not_autofilled(review_status, tmp_path):
+    html = (FIXTURES / "ashby_application_form.html").read_text(encoding="utf-8")
+    page = FakePage(html)
+    resume_path = tmp_path / "resume.pdf"
+    resume_path.write_bytes(b"%PDF-1.4\n%stub\n")
+    plan = {
+        "application_id": 9,
+        "application_url": "https://jobs.ashbyhq.com/acme/123",
+        "candidate_fields": [field.as_dict() for field in _candidate_fields()],
+        "known_answers": [
+            {
+                "question_key": "short_experience_summary",
+                "answer_text": "Backend engineer focused on Python services.",
+                "human_review_required": False,
+                "autofill_safe": True,
+                "source": "llm_answer_draft:17",
+                "draft_id": 17,
+                "review_status": review_status,
+            }
+        ],
+    }
+
+    result = AshbyAutofillAdapter(wait_for_review=False).fill_page(page, plan, resume_path)
+    payload = result.as_dict()
+
+    assert "#ashby_summary" not in page.filled
+    assert "short_experience_summary" not in payload["fields_filled"]
+    assert any(field["key"] == "short_experience_summary" for field in payload["unresolved_fields"])
+    assert payload["submitted"] is False
+
+
+def test_approved_llm_answer_is_autofilled(tmp_path):
+    html = (FIXTURES / "ashby_application_form.html").read_text(encoding="utf-8")
+    page = FakePage(html)
+    resume_path = tmp_path / "resume.pdf"
+    resume_path.write_bytes(b"%PDF-1.4\n%stub\n")
+    plan = {
+        "application_id": 9,
+        "application_url": "https://jobs.ashbyhq.com/acme/123",
+        "candidate_fields": [field.as_dict() for field in _candidate_fields()],
+        "known_answers": [
+            {
+                "question_key": "short_experience_summary",
+                "answer_text": "Backend engineer focused on Python services.",
+                "human_review_required": False,
+                "autofill_safe": True,
+                "source": "llm_answer_draft:17",
+                "draft_id": 17,
+                "review_status": "approved",
+            }
+        ],
+    }
+
+    result = AshbyAutofillAdapter(wait_for_review=False).fill_page(page, plan, resume_path)
+    payload = result.as_dict()
+
+    assert page.filled["#ashby_summary"] == "Backend engineer focused on Python services."
+    assert "short_experience_summary" in payload["fields_filled"]
+    assert payload["submitted"] is False
+
+
 @pytest.mark.parametrize(
     ("adapter_cls", "url", "fixture_name"),
     (
@@ -606,6 +668,65 @@ def test_greenhouse_result_is_persisted(conn, tmp_path, monkeypatch):
     assert result["resume_attached"] is True
     assert len(runs) == 1
     assert runs[0]["submitted"] == 0
+
+
+def test_autofill_run_persists_selected_llm_resume_and_answer_drafts(conn, tmp_path, monkeypatch):
+    app_id = _seed_plan(conn, tmp_path)
+    row = ApplicationPlanRepo(conn).get_by_application(app_id)
+    payload = json.loads(row["plan_json"])
+    payload["selected_resume_source"] = "llm_resume_wording"
+    payload["approved_llm_resume"] = {
+        "artifact_id": 31,
+        "resume_id": payload["resume_id"],
+        "resume_path": payload["resume_path"],
+        "usable": True,
+    }
+    payload["known_answers"] = [
+        {
+            "question_key": "short_experience_summary",
+            "answer_text": "Backend engineer focused on Python services.",
+            "human_review_required": False,
+            "autofill_safe": True,
+            "source": "llm_answer_draft:17",
+            "draft_id": 17,
+            "review_status": "approved",
+        }
+    ]
+    conn.execute(
+        "UPDATE application_plans SET plan_json=? WHERE application_id=?",
+        (json.dumps(payload), app_id),
+    )
+
+    class FakeAdapter:
+        def __init__(self, **kwargs):
+            pass
+
+        def run(self, plan, resume_path):
+            return AutofillResult(
+                application_id=plan["application_id"],
+                ats=ATS_GREENHOUSE,
+                url=plan["application_url"],
+                fields_detected=[{"key": "short_experience_summary"}],
+                fields_filled=["short_experience_summary"],
+                resume_attached=True,
+                unresolved_fields=[],
+                sensitive_fields=[],
+                human_intervention_required=False,
+                errors=[],
+                status=AUTOFILL_STATUS_FILLED_FOR_REVIEW,
+                submitted=False,
+            )
+
+    monkeypatch.setattr(application_autofill, "GreenhouseAutofillAdapter", FakeAdapter)
+
+    result = application_autofill.run_attended_autofill(conn, _config(tmp_path), app_id, wait_for_review=False)
+    stored = json.loads(ApplicationAutofillRunRepo(conn).list_by_application(app_id)[0]["result_json"])
+
+    assert result["selected_resume"]["source"] == "llm_resume_wording"
+    assert result["selected_resume"]["approved_llm_resume_artifact_id"] == 31
+    assert result["approved_answer_draft_ids"] == [17]
+    assert stored["approved_answer_draft_ids"] == [17]
+    assert stored["submitted"] is False
 
 
 def test_apply_autofill_cli_invokes_service(tmp_path, monkeypatch):

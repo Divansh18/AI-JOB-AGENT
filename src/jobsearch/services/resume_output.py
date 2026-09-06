@@ -82,12 +82,29 @@ def build_resume_output(
     analysis=None,
     as_of: date | None = None,
 ) -> dict[str, Any]:
+    prepared = resume_service.prepare_resume_variant(conn, config, job_id, analysis=analysis, as_of=as_of)
+    return build_resume_output_from_prepared(conn, config, prepared, as_of=as_of)
+
+
+def build_resume_output_from_prepared(
+    conn,
+    config,
+    prepared,
+    *,
+    as_of: date | None = None,
+    render_fingerprint_extra: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Render and persist an already-prepared resume variant.
+
+    This keeps LLM-assisted wording behind the same deterministic claim and
+    page-count validators used by the normal resume output path.
+    """
     master_record = MasterResumeRepo(conn).get_active()
     if master_record is None:
         raise ResumeOutputError("no active master resume is registered")
 
-    prepared = resume_service.prepare_resume_variant(conn, config, job_id, analysis=analysis, as_of=as_of)
-    render_fingerprint = _render_fingerprint(prepared, master_record.file_hash)
+    job_id = prepared.analysis.job_id
+    render_fingerprint = _render_fingerprint(prepared, master_record.file_hash, extra=render_fingerprint_extra)
     repo = ResumeVariantRepo(conn)
     existing = repo.find_by_render_fingerprint(render_fingerprint)
     if (
@@ -758,7 +775,7 @@ def _payload_from_row(row, *, reused_existing: bool) -> dict[str, Any]:
     }
 
 
-def _render_fingerprint(prepared, master_file_hash: str) -> str:
+def _render_fingerprint(prepared, master_file_hash: str, *, extra: dict[str, Any] | None = None) -> str:
     payload = {
         "analysis": prepared.analysis.as_dict(),
         "source_model": prepared.source_model.as_dict(),
@@ -766,6 +783,8 @@ def _render_fingerprint(prepared, master_file_hash: str) -> str:
         "resume": prepared.tailored_resume.as_dict(),
         "master_file_hash": master_file_hash,
     }
+    if extra:
+        payload["extra"] = extra
     return hashlib.sha256(json.dumps(payload, ensure_ascii=True, sort_keys=True).encode("utf-8")).hexdigest()
 
 

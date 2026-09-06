@@ -225,9 +225,9 @@ class LlmSettings(BaseModel):
     """LLM configuration.
 
     Provider selection is config-driven: switching between the temporary
-    Claude Code CLI runtime and the Anthropic API requires only a change to
-    this value plus the relevant environment variable. No application code
-    changes. The API key is never a config field - it comes from the
+    Claude Code CLI runtime, Anthropic API, and OpenAI API requires only a
+    change to this value plus the relevant environment variable. No
+    application code changes. The API key is never a config field - it comes from the
     environment only.
     """
 
@@ -235,19 +235,25 @@ class LlmSettings(BaseModel):
     provider: str = "claude_cli"
     model: str = "claude-haiku-4-5"
     daily_cap_inr: float = 15.0
+    monthly_cap_inr: float = 500.0
+    per_call_cap_inr: float = 25.0
     usd_to_inr: float = 88.0
     max_jd_chars: int = 6000
+    max_input_chars: int = 16000
     max_output_tokens: int = 1024
+    prompt_version: str = "application_intelligence_v1"
+    answer_prompt_version: str = "application_answer_drafting_v1"
+    resume_wording_prompt_version: str = "resume_wording_v2"
     # claude_cli provider only
     cli_binary: str = "claude"
     cli_timeout_seconds: int = 120
-    # anthropic provider only
+    # API providers only: anthropic and openai
     api_timeout_seconds: int = 60
 
     @field_validator("provider")
     @classmethod
     def _provider(cls, v: str) -> str:
-        allowed = {"claude_cli", "anthropic"}
+        allowed = {"claude_cli", "anthropic", "openai"}
         if v not in allowed:
             raise ValueError(f"llm.provider must be one of {sorted(allowed)}")
         return v

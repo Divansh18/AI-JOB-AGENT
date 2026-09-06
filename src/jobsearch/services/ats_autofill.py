@@ -396,6 +396,9 @@ def answer_values_from_plan(plan: dict[str, Any]) -> dict[str, str]:
         key = canonical_question_key(str(answer.get("question_key") or ""))
         if not key or answer.get("human_review_required") or not answer.get("autofill_safe", True):
             continue
+        source = str(answer.get("source") or "")
+        if source.startswith("llm_answer_draft:") and answer.get("review_status") != "approved":
+            continue
         values[key] = str(answer.get("answer_text") or "")
     return values
 

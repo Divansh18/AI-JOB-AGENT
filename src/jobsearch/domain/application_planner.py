@@ -52,6 +52,8 @@ class ApplicationPlanAnswer:
     source: str | None = None
     human_review_required: bool = False
     autofill_safe: bool = True
+    draft_id: int | None = None
+    review_status: str | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -63,6 +65,8 @@ class ApplicationPlanAnswer:
             "source": self.source,
             "human_review_required": self.human_review_required,
             "autofill_safe": self.autofill_safe,
+            "draft_id": self.draft_id,
+            "review_status": self.review_status,
         }
 
 
@@ -125,6 +129,10 @@ class ApplicationPlan:
     blockers: list[str]
     review_required: bool
     state: str
+    deterministic_resume: dict[str, Any] | None = None
+    approved_llm_resume: dict[str, Any] | None = None
+    selected_resume_source: str = "deterministic"
+    answer_drafts: dict[str, Any] = field(default_factory=dict)
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
@@ -147,6 +155,10 @@ class ApplicationPlan:
             "blockers": self.blockers,
             "review_required": self.review_required,
             "state": self.state,
+            "deterministic_resume": self.deterministic_resume,
+            "approved_llm_resume": self.approved_llm_resume,
+            "selected_resume_source": self.selected_resume_source,
+            "answer_drafts": self.answer_drafts,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

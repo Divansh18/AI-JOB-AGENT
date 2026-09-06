@@ -50,6 +50,7 @@ def run_attended_autofill(
                 errors=[f"plan_blocked:{blocker}" for blocker in plan["blockers"]],
                 submitted=False,
             ),
+            plan=plan,
         )
 
     ats = detect_ats(plan["application_url"])
@@ -66,6 +67,7 @@ def run_attended_autofill(
                 errors=[f"unsupported_ats:{ats}"],
                 submitted=False,
             ),
+            plan=plan,
         )
 
     resume_error = _validate_resume_plan(config.root, plan)
@@ -81,6 +83,7 @@ def run_attended_autofill(
                 errors=[resume_error],
                 submitted=False,
             ),
+            plan=plan,
         )
 
     adapter = adapter_cls(
@@ -100,7 +103,7 @@ def run_attended_autofill(
             errors=[str(exc)],
             submitted=False,
         )
-    return _save_result(conn, result)
+    return _save_result(conn, result, plan=plan)
 
 
 def _adapter_for_ats(ats: str):
@@ -133,8 +136,22 @@ def _resolve_resume_path(root: Path, resume_path: str) -> Path:
     return path.resolve()
 
 
-def _save_result(conn, result: AutofillResult) -> dict[str, Any]:
+def _save_result(conn, result: AutofillResult, *, plan: dict[str, Any] | None = None) -> dict[str, Any]:
     payload = result.as_dict()
+    if plan is not None:
+        payload["selected_resume"] = {
+            "source": plan.get("selected_resume_source") or "deterministic",
+            "resume_id": plan.get("resume_id"),
+            "resume_path": plan.get("resume_path"),
+            "approved_llm_resume_artifact_id": (plan.get("approved_llm_resume") or {}).get("artifact_id"),
+        }
+        payload["approved_answer_draft_ids"] = [
+            answer.get("draft_id")
+            for answer in plan.get("known_answers") or []
+            if str(answer.get("source") or "").startswith("llm_answer_draft:")
+            and answer.get("review_status") == "approved"
+            and answer.get("autofill_safe")
+        ]
     run_id = ApplicationAutofillRunRepo(conn).create(payload)
     payload["autofill_run_id"] = run_id
     Audit(conn).human(
@@ -144,6 +161,8 @@ def _save_result(conn, result: AutofillResult) -> dict[str, Any]:
         ats=payload["ats"],
         status=payload["status"],
         resume_attached=payload["resume_attached"],
+        selected_resume=payload.get("selected_resume"),
+        approved_answer_draft_ids=payload.get("approved_answer_draft_ids") or [],
         human_intervention_required=payload["human_intervention_required"],
         submitted=False,
     )

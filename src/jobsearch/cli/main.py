@@ -49,6 +49,7 @@ answers_app = typer.Typer(no_args_is_help=True, help="Manage reusable verified a
 resume_app = typer.Typer(no_args_is_help=True, help="Analyze fit and manage tailored resume variants.")
 resume_master_app = typer.Typer(no_args_is_help=True, help="Register and ingest the canonical master resume.")
 apply_app = typer.Typer(no_args_is_help=True, help="Plan and track attended applications.")
+intelligence_app = typer.Typer(no_args_is_help=True, help="Run optional grounded LLM job intelligence.")
 app.add_typer(companies_app, name="companies")
 app.add_typer(jobs_app, name="jobs")
 app.add_typer(db_app, name="db")
@@ -56,6 +57,7 @@ app.add_typer(candidate_app, name="candidate")
 app.add_typer(answers_app, name="answers")
 app.add_typer(resume_app, name="resume")
 app.add_typer(apply_app, name="apply")
+app.add_typer(intelligence_app, name="intelligence")
 resume_app.add_typer(resume_master_app, name="master")
 
 console = Console()
@@ -202,10 +204,28 @@ def _render_application_plan(payload: dict) -> None:
         "resume: "
         f"{payload.get('resume_path') or '-'}  "
         f"id={payload.get('resume_id') or '-'}  "
+        f"source={payload.get('selected_resume_source') or 'deterministic'}  "
         f"decision={payload.get('resume_decision') or '-'}  "
         f"pages={payload.get('resume_page_count') or '-'}  "
         f"status={payload.get('resume_page_validation_status') or '-'}"
     )
+    deterministic = payload.get("deterministic_resume") or {}
+    if deterministic:
+        console.print(
+            "deterministic resume: "
+            f"id={deterministic.get('resume_id') or '-'}  "
+            f"path={deterministic.get('resume_path') or '-'}  "
+            f"decision={deterministic.get('resume_decision') or '-'}"
+        )
+    approved_resume = payload.get("approved_llm_resume") or {}
+    if approved_resume:
+        console.print(
+            "approved LLM resume: "
+            f"artifact={approved_resume.get('artifact_id') or '-'}  "
+            f"id={approved_resume.get('resume_id') or '-'}  "
+            f"path={approved_resume.get('resume_path') or '-'}  "
+            f"usable={'yes' if approved_resume.get('usable') else 'no'}"
+        )
 
     blockers = payload.get("blockers") or []
     if blockers:
@@ -224,7 +244,18 @@ def _render_application_plan(payload: dict) -> None:
         console.print("\n[bold]known answers[/]")
         for answer in answers:
             suffix = " [review]" if answer.get("human_review_required") else ""
-            console.print(f"- {answer['question_key']}: {answer['answer_text']}{suffix}")
+            source = f" source={answer.get('source')}" if answer.get("source") else ""
+            draft = f" draft={answer.get('draft_id')}" if answer.get("draft_id") else ""
+            console.print(f"- {answer['question_key']}: {answer['answer_text']}{suffix}{source}{draft}")
+
+    drafts = payload.get("answer_drafts") or {}
+    if drafts:
+        console.print(
+            "\n[bold]answer drafts[/] "
+            f"pending={drafts.get('pending_count', 0)}  "
+            f"approved={drafts.get('approved_count', 0)}  "
+            f"rejected={drafts.get('rejected_count', 0)}"
+        )
 
     unresolved = payload.get("unanswered_fields") or []
     if unresolved:
@@ -272,6 +303,145 @@ def _render_autofill_result(payload: dict) -> None:
             console.print(f"- {error}")
     if payload.get("human_intervention_required"):
         console.print("\n[yellow]human review required before any submission[/]")
+
+
+def _render_intelligence_report(payload: dict) -> None:
+    console.print(
+        f"[bold]intelligence artifact #{payload.get('artifact_id') or '-'}[/]  "
+        f"job={payload['job_id']}  status={payload['status']}  "
+        f"provider={payload.get('provider') or '-'}  model={payload.get('model') or '-'}"
+    )
+    console.print(
+        f"prompt={payload.get('prompt_version') or '-'}  "
+        f"fit={payload.get('deterministic_fit_score') if payload.get('deterministic_fit_score') is not None else '-'}  "
+        f"resume={payload.get('deterministic_resume_decision') or '-'}  "
+        f"cache={'yes' if payload.get('from_cache') else 'no'}  "
+        f"cost=INR {float(payload.get('cost_inr') or 0):.4f}"
+    )
+    if payload.get("errors"):
+        console.print("\n[bold red]errors[/]")
+        for error in payload["errors"]:
+            console.print(f"- {error}")
+    if payload.get("validation_errors"):
+        console.print("\n[bold red]validation errors[/]")
+        for issue in payload["validation_errors"]:
+            console.print(f"- {issue.get('code')}: {issue.get('message')}")
+
+    insight = payload.get("insight") or payload.get("output_json") or {}
+    if not insight:
+        return
+    console.print(f"\n[bold]role summary[/]\n{insight.get('role_summary') or '-'}")
+    console.print(f"\n[bold]fit[/]\n{insight.get('fit_verdict') or 'unknown'}: {insight.get('grounded_fit_assessment') or '-'}")
+    if insight.get("role_priorities"):
+        console.print("\n[bold]role priorities[/]")
+        for item in insight["role_priorities"]:
+            console.print(f"- {item}")
+    for label, key in (("must-have requirements", "must_have_requirements"), ("preferred requirements", "preferred_requirements")):
+        if insight.get(key):
+            console.print(f"\n[bold]{label}[/]")
+            for item in insight[key]:
+                refs = ", ".join(item.get("evidence_refs") or [])
+                suffix = f" refs={refs}" if refs else ""
+                console.print(f"- {item.get('text')} [{item.get('candidate_match', 'unknown')}]{suffix}")
+    if insight.get("uncertainties"):
+        console.print("\n[bold yellow]uncertainties[/]")
+        for item in insight["uncertainties"]:
+            console.print(f"- {item}")
+    if insight.get("gaps"):
+        console.print("\n[bold yellow]gaps[/]")
+        for item in insight["gaps"]:
+            console.print(f"- {item}")
+
+
+def _render_answer_draft_set(payload: dict) -> None:
+    console.print(
+        f"[bold]answer drafts[/]  application={payload['application_id']}  "
+        f"job={payload['job_id']}  status={payload['status']}  "
+        f"provider={payload.get('provider') or '-'}  model={payload.get('model') or '-'}"
+    )
+    console.print(
+        f"prompt={payload.get('prompt_version') or '-'}  "
+        f"questions={len(payload.get('questions') or [])}  "
+        f"drafts={len(payload.get('drafts') or [])}  "
+        f"blocked={len(payload.get('blocked_questions') or [])}  "
+        f"cache={'yes' if payload.get('from_cache') else 'no'}  "
+        f"cost=INR {float(payload.get('cost_inr') or 0):.4f}"
+    )
+    if payload.get("errors"):
+        console.print("\n[bold red]errors[/]")
+        for error in payload["errors"]:
+            console.print(f"- {error}")
+    drafts = payload.get("drafts") or []
+    if drafts:
+        console.print("\n[bold]drafts[/]")
+        for draft in drafts:
+            _render_answer_draft_summary(draft)
+    blocked = [q for q in payload.get("blocked_questions") or [] if q.get("classification") != "safe_free_text"]
+    if blocked:
+        console.print("\n[bold]blocked questions[/]")
+        for question in blocked:
+            console.print(f"- {question['classification']}: {question['text']}")
+
+
+def _render_answer_draft(payload: dict) -> None:
+    _render_answer_draft_summary(payload)
+    if payload.get("answer_text"):
+        console.print(f"\n[bold]answer[/]\n{payload['answer_text']}")
+    if payload.get("validation_errors"):
+        console.print("\n[bold red]validation errors[/]")
+        for issue in payload["validation_errors"]:
+            console.print(f"- {issue.get('code')}: {issue.get('message')}")
+
+
+def _render_answer_draft_summary(payload: dict) -> None:
+    refs = ", ".join(payload.get("evidence_refs") or []) or "-"
+    console.print(
+        f"- #{payload.get('draft_id') or '-'} {payload.get('question_key')}: "
+        f"{payload.get('validation_status')}  "
+        f"review_status={payload.get('review_status') or '-'}  "
+        f"review={'yes' if payload.get('review_required') else 'no'}  "
+        f"confidence={payload.get('confidence')}  refs={refs}"
+    )
+    console.print(f"  {payload.get('question_text') or '-'}")
+
+
+def _render_resume_wording_artifact(payload: dict) -> None:
+    console.print(
+        f"[bold]resume wording artifact #{payload.get('artifact_id') or '-'}[/]  "
+        f"job={payload['job_id']}  status={payload['status']}  "
+        f"variant={payload.get('resume_variant_id') or '-'}"
+    )
+    console.print(
+        f"provider={payload.get('provider') or '-'}  model={payload.get('model') or '-'}  "
+        f"prompt={payload.get('prompt_version') or '-'}  "
+        f"review={payload.get('review_status') or '-'}  "
+        f"cache={'yes' if payload.get('from_cache') else 'no'}  "
+        f"cost=INR {float(payload.get('cost_inr') or 0):.4f}"
+    )
+    if payload.get("reviewer_source") or payload.get("reviewed_at"):
+        console.print(
+            f"reviewer={payload.get('reviewer_source') or '-'}  "
+            f"reviewed_at={payload.get('reviewed_at') or '-'}"
+        )
+    if payload.get("errors"):
+        console.print("\n[bold red]errors[/]")
+        for error in payload["errors"]:
+            console.print(f"- {error}")
+    if payload.get("validation_errors"):
+        console.print("\n[bold red]validation errors[/]")
+        for issue in payload["validation_errors"]:
+            console.print(f"- {issue.get('code')}: {issue.get('message')}")
+    suggestions = payload.get("suggestions") or []
+    if suggestions:
+        console.print("\n[bold]suggestions[/]")
+        for suggestion in suggestions:
+            refs = ", ".join(suggestion.get("evidence_refs") or []) or "-"
+            console.print(
+                f"- {suggestion.get('section')} {suggestion.get('item_key') or '-'}  "
+                f"{suggestion.get('action')}  {suggestion.get('validation_status')}  refs={refs}"
+            )
+            console.print(f"  from: {suggestion.get('original_text') or '-'}")
+            console.print(f"  to:   {suggestion.get('suggested_text') or '-'}")
 
 
 # --- setup -----------------------------------------------------------------
@@ -1373,6 +1543,301 @@ def apply_autofill(
     if _emit(payload, json_out):
         return
     _render_autofill_result(payload)
+
+
+# --- optional grounded LLM application intelligence ------------------------
+
+
+@intelligence_app.command("analyze")
+def intelligence_analyze(
+    job_id: int,
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Run optional grounded LLM JD intelligence for one existing job."""
+    from ..llm.application_intelligence import analyze_job_intelligence
+
+    config, conn = _ctx()
+    report = analyze_job_intelligence(conn, config, job_id)
+    payload = report.as_dict()
+    if _emit(payload, json_out):
+        return
+    _render_intelligence_report(payload)
+
+
+@intelligence_app.command("show")
+def intelligence_show(
+    artifact_id: int,
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Show one persisted application-intelligence artifact."""
+    from ..llm.application_intelligence import ApplicationIntelligenceError, get_artifact
+
+    _, conn = _ctx()
+    try:
+        payload = get_artifact(conn, artifact_id)
+    except ApplicationIntelligenceError as exc:
+        console.print(f"[red]{exc}[/]")
+        raise typer.Exit(1) from exc
+    if _emit(payload, json_out):
+        return
+    _render_intelligence_report(payload)
+
+
+@intelligence_app.command("list")
+def intelligence_list(
+    job_id: int | None = typer.Option(None, "--job-id"),
+    limit: int = typer.Option(20, "--limit"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """List persisted application-intelligence artifacts."""
+    from ..llm.application_intelligence import list_artifacts
+
+    _, conn = _ctx()
+    rows = list_artifacts(conn, job_id=job_id, limit=limit)
+    if _emit({"artifacts": rows}, json_out):
+        return
+    table = Table(title="application intelligence", show_lines=False)
+    for col in ("id", "job", "company", "status", "provider", "model", "updated"):
+        table.add_column(col)
+    for row in rows:
+        table.add_row(
+            str(row["id"]),
+            f"{row['job_id']} {row.get('title') or ''}".strip(),
+            str(row.get("company_name_raw") or "-"),
+            str(row["status"]),
+            str(row["provider"]),
+            str(row["model"]),
+            str(row["updated_at"]),
+        )
+    console.print(table)
+
+
+@intelligence_app.command("draft-answers")
+def intelligence_draft_answers(
+    application_id: int,
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Draft grounded free-text answers for one existing application plan."""
+    from ..llm.application_answers import draft_application_answers
+
+    config, conn = _ctx()
+    payload = draft_application_answers(conn, config, application_id).as_dict()
+    if _emit(payload, json_out):
+        return
+    _render_answer_draft_set(payload)
+
+
+@intelligence_app.command("answers")
+def intelligence_answers(
+    application_id: int,
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """List persisted grounded answer drafts for one application."""
+    from ..llm.application_answers import list_answer_drafts
+
+    _, conn = _ctx()
+    drafts = list_answer_drafts(conn, application_id)
+    payload = {"application_id": application_id, "drafts": drafts}
+    if _emit(payload, json_out):
+        return
+    if not drafts:
+        console.print("no answer drafts")
+        return
+    table = Table(title=f"answer drafts for application {application_id}", show_lines=False)
+    for col in ("id", "question", "status", "review_state", "review", "confidence", "updated"):
+        table.add_column(col)
+    for draft in drafts:
+        table.add_row(
+            str(draft.get("draft_id") or "-"),
+            str(draft.get("question_key") or "-"),
+            str(draft.get("validation_status") or "-"),
+            str(draft.get("review_status") or "-"),
+            "yes" if draft.get("review_required") else "no",
+            str(draft.get("confidence")),
+            str(draft.get("created_at") or "-"),
+        )
+    console.print(table)
+
+
+@intelligence_app.command("answer-show")
+def intelligence_answer_show(
+    draft_id: int,
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Show one persisted grounded answer draft."""
+    from ..llm.application_answers import ApplicationAnswerDraftingError, get_answer_draft
+
+    _, conn = _ctx()
+    try:
+        payload = get_answer_draft(conn, draft_id)
+    except ApplicationAnswerDraftingError as exc:
+        console.print(f"[red]{exc}[/]")
+        raise typer.Exit(1) from exc
+    if _emit(payload, json_out):
+        return
+    _render_answer_draft(payload)
+
+
+@intelligence_app.command("resume-wording")
+def intelligence_resume_wording(
+    job_id: int,
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Suggest grounded wording changes for one deterministic tailor resume."""
+    from ..llm.resume_wording import improve_resume_wording
+
+    config, conn = _ctx()
+    payload = improve_resume_wording(conn, config, job_id).as_dict()
+    if _emit(payload, json_out):
+        return
+    _render_resume_wording_artifact(payload)
+
+
+@intelligence_app.command("resume-wording-show")
+def intelligence_resume_wording_show(
+    artifact_id: int,
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Show one persisted resume-wording artifact."""
+    from ..llm.resume_wording import ResumeWordingError, get_resume_wording_artifact
+
+    _, conn = _ctx()
+    try:
+        payload = get_resume_wording_artifact(conn, artifact_id)
+    except ResumeWordingError as exc:
+        console.print(f"[red]{exc}[/]")
+        raise typer.Exit(1) from exc
+    if _emit(payload, json_out):
+        return
+    _render_resume_wording_artifact(payload)
+
+
+@intelligence_app.command("resume-wording-approve")
+def intelligence_resume_wording_approve(
+    artifact_id: int,
+    note: str | None = typer.Option(None, "--note"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Approve a valid one-page LLM wording artifact for its application."""
+    from ..services.application_intelligence_review import (
+        ApplicationIntelligenceReviewError,
+        approve_resume_wording_artifact,
+    )
+
+    config, conn = _ctx()
+    try:
+        payload = approve_resume_wording_artifact(conn, config, artifact_id, note=note)
+    except ApplicationIntelligenceReviewError as exc:
+        console.print(f"[red]{exc}[/]")
+        raise typer.Exit(1) from exc
+    if _emit(payload, json_out):
+        return
+    console.print(f"[green]approved[/] resume wording artifact #{artifact_id}")
+    _render_application_plan(payload["application_plan"])
+
+
+@intelligence_app.command("resume-wording-reject")
+def intelligence_resume_wording_reject(
+    artifact_id: int,
+    note: str | None = typer.Option(None, "--note"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Reject an LLM wording artifact and retain the deterministic resume."""
+    from ..services.application_intelligence_review import (
+        ApplicationIntelligenceReviewError,
+        reject_resume_wording_artifact,
+    )
+
+    config, conn = _ctx()
+    try:
+        payload = reject_resume_wording_artifact(conn, config, artifact_id, note=note)
+    except ApplicationIntelligenceReviewError as exc:
+        console.print(f"[red]{exc}[/]")
+        raise typer.Exit(1) from exc
+    if _emit(payload, json_out):
+        return
+    console.print(f"[yellow]rejected[/] resume wording artifact #{artifact_id}")
+    _render_application_plan(payload["application_plan"])
+
+
+@intelligence_app.command("answer-approve")
+def intelligence_answer_approve(
+    draft_id: int,
+    note: str | None = typer.Option(None, "--note"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Approve a valid safe grounded answer draft for autofill use."""
+    from ..services.application_intelligence_review import (
+        ApplicationIntelligenceReviewError,
+        approve_answer_draft,
+    )
+
+    config, conn = _ctx()
+    try:
+        payload = approve_answer_draft(conn, config, draft_id, note=note)
+    except ApplicationIntelligenceReviewError as exc:
+        console.print(f"[red]{exc}[/]")
+        raise typer.Exit(1) from exc
+    if _emit(payload, json_out):
+        return
+    console.print(f"[green]approved[/] answer draft #{draft_id}")
+    _render_application_plan(payload["application_plan"])
+
+
+@intelligence_app.command("answer-reject")
+def intelligence_answer_reject(
+    draft_id: int,
+    note: str | None = typer.Option(None, "--note"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Reject an answer draft so it cannot be used by autofill."""
+    from ..services.application_intelligence_review import (
+        ApplicationIntelligenceReviewError,
+        reject_answer_draft,
+    )
+
+    config, conn = _ctx()
+    try:
+        payload = reject_answer_draft(conn, config, draft_id, note=note)
+    except ApplicationIntelligenceReviewError as exc:
+        console.print(f"[red]{exc}[/]")
+        raise typer.Exit(1) from exc
+    if _emit(payload, json_out):
+        return
+    console.print(f"[yellow]rejected[/] answer draft #{draft_id}")
+    _render_application_plan(payload["application_plan"])
+
+
+@intelligence_app.command("answers-pending")
+def intelligence_answers_pending(
+    application_id: int | None = typer.Option(None, "--application-id"),
+    limit: int = typer.Option(50, "--limit"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """List pending LLM answer drafts that need human review."""
+    from ..services.application_intelligence_review import list_pending_answer_drafts
+
+    _, conn = _ctx()
+    drafts = list_pending_answer_drafts(conn, application_id=application_id, limit=limit)
+    payload = {"application_id": application_id, "drafts": drafts}
+    if _emit(payload, json_out):
+        return
+    if not drafts:
+        console.print("no pending answer drafts")
+        return
+    table = Table(title="pending answer drafts", show_lines=False)
+    for col in ("id", "application", "question", "validation", "provider", "model"):
+        table.add_column(col)
+    for draft in drafts:
+        table.add_row(
+            str(draft.get("draft_id") or "-"),
+            str(draft.get("application_id") or "-"),
+            str(draft.get("question_key") or "-"),
+            str(draft.get("validation_status") or "-"),
+            str(draft.get("provider") or "-"),
+            str(draft.get("model") or "-"),
+        )
+    console.print(table)
 
 
 @app.command()

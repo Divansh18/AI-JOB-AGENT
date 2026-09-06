@@ -8,6 +8,13 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Iterable
 
+from ..domain.application_intelligence import (
+    ApplicationIntelligenceIssue,
+    GroundedAnswerDraft,
+    ResumeWordingArtifact,
+    ResumeWordingRequest,
+    ResumeWordingSuggestion,
+)
 from ..domain.application_planner import ApplicationPlan
 from ..domain.candidate import CandidateFact, VerifiedAnswer
 from ..domain.master_resume import MasterResumeRecord
@@ -69,6 +76,116 @@ def _row_to_candidate_answer(row: sqlite3.Row) -> VerifiedAnswer:
         human_review_required=bool(row["human_review_required"]),
         created_at=parse_dt(row["created_at"]),
         updated_at=parse_dt(row["updated_at"]),
+    )
+
+
+def _row_to_answer_draft(row: sqlite3.Row) -> GroundedAnswerDraft:
+    return GroundedAnswerDraft(
+        draft_id=row["id"],
+        application_id=row["application_id"],
+        job_id=row["job_id"],
+        question_key=row["question_key"],
+        question_text=row["question_text"],
+        question_classification=row["question_classification"],
+        answer_text=row["answer_text"],
+        evidence_refs=json.loads(row["evidence_refs"]),
+        confidence=float(row["confidence"] or 0),
+        review_required=bool(row["review_required"]),
+        validation_status=row["validation_status"],
+        validation_errors=[
+            ApplicationIntelligenceIssue(
+                code=item.get("code", ""),
+                message=item.get("message", ""),
+                evidence_refs=item.get("evidence_refs") or [],
+            )
+            for item in json.loads(row["validation_errors"])
+        ],
+        provider=row["provider"],
+        model=row["model"],
+        prompt_version=row["prompt_version"],
+        context_fingerprint=row["context_fingerprint"],
+        prompt_hash=row["prompt_hash"],
+        source_truth_hash=row["source_truth_hash"],
+        from_cache=bool(row["from_cache"]),
+        cost_inr=float(row["cost_inr"] or 0),
+        review_status=row["review_status"] if "review_status" in row.keys() else "pending_review",
+        reviewer_source=row["reviewer_source"] if "reviewer_source" in row.keys() else None,
+        reviewed_at=parse_dt(row["reviewed_at"]) if "reviewed_at" in row.keys() else None,
+        review_note=row["review_note"] if "review_note" in row.keys() else None,
+        created_at=parse_dt(row["created_at"]),
+    )
+
+
+def _row_to_resume_wording_artifact(row: sqlite3.Row) -> ResumeWordingArtifact:
+    request_payload = json.loads(row["request_json"]) if row["request_json"] else {}
+    suggestions_payload = json.loads(row["suggestions_json"]) if row["suggestions_json"] else []
+    validation_payload = json.loads(row["validation_errors"]) if row["validation_errors"] else []
+    errors_payload = json.loads(row["errors_json"]) if "errors_json" in row.keys() and row["errors_json"] else []
+    return ResumeWordingArtifact(
+        artifact_id=row["id"],
+        job_id=row["job_id"],
+        resume_variant_id=row["resume_variant_id"],
+        status=row["validation_status"],
+        purpose=row["purpose"],
+        prompt_version=row["prompt_version"],
+        context_fingerprint=row["context_fingerprint"],
+        source_truth_hash=row["source_truth_hash"],
+        provider=row["provider"],
+        model=row["model"],
+        prompt_hash=row["prompt_hash"],
+        request=ResumeWordingRequest(
+            job_id=int(request_payload.get("job_id") or row["job_id"]),
+            target_role=str(request_payload.get("target_role") or ""),
+            sections=list(request_payload.get("sections") or []),
+            allowed_evidence_refs=list(request_payload.get("allowed_evidence_refs") or []),
+            prompt_version=str(request_payload.get("prompt_version") or row["prompt_version"]),
+            source_truth_hash=str(request_payload.get("source_truth_hash") or row["source_truth_hash"]),
+        )
+        if request_payload
+        else None,
+        suggestions=[
+            ResumeWordingSuggestion(
+                section=item.get("section", ""),
+                item_key=item.get("item_key", ""),
+                action=item.get("action", "rewrite"),
+                original_text=item.get("original_text", ""),
+                suggested_text=item.get("suggested_text", ""),
+                evidence_refs=item.get("evidence_refs") or [],
+                validation_status=item.get("validation_status", "invalid"),
+                validation_errors=[
+                    ApplicationIntelligenceIssue(
+                        code=issue.get("code", ""),
+                        message=issue.get("message", ""),
+                        evidence_refs=issue.get("evidence_refs") or [],
+                    )
+                    for issue in item.get("validation_errors", [])
+                ],
+                review_required=bool(item.get("review_required", True)),
+            )
+            for item in suggestions_payload
+        ],
+        validation_errors=[
+            ApplicationIntelligenceIssue(
+                code=item.get("code", ""),
+                message=item.get("message", ""),
+                evidence_refs=item.get("evidence_refs") or [],
+            )
+            for item in validation_payload
+        ],
+        errors=list(errors_payload),
+        allowed_evidence_refs=json.loads(row["allowed_evidence_refs"]),
+        from_cache=bool(row["from_cache"]),
+        cost_inr=float(row["cost_inr"] or 0),
+        review_status=row["review_status"] if "review_status" in row.keys() else "pending_review",
+        reviewer_source=row["reviewer_source"] if "reviewer_source" in row.keys() else None,
+        reviewed_at=parse_dt(row["reviewed_at"]) if "reviewed_at" in row.keys() else None,
+        review_note=row["review_note"] if "review_note" in row.keys() else None,
+        promoted_application_id=(
+            int(row["promoted_application_id"])
+            if "promoted_application_id" in row.keys() and row["promoted_application_id"] is not None
+            else None
+        ),
+        created_at=parse_dt(row["created_at"]),
     )
 
 
@@ -997,6 +1114,495 @@ class DigestRepo:
                counts=excluded.counts, created_at=excluded.created_at""",
             (digest_date, path, json.dumps(counts), iso(utcnow())),
         )
+
+
+class LlmArtifactRepo:
+    def __init__(self, conn: sqlite3.Connection):
+        self.conn = conn
+
+    def save(
+        self,
+        *,
+        job_id: int,
+        purpose: str,
+        prompt_version: str,
+        provider: str,
+        model: str,
+        context_fingerprint: str,
+        prompt_hash: str,
+        source_truth_hash: str,
+        status: str,
+        input_json: dict[str, Any],
+        output_json: dict[str, Any] | None = None,
+        validation_errors: list[dict[str, Any]] | None = None,
+        evidence_refs: list[str] | None = None,
+        from_cache: bool = False,
+        cost_inr: float = 0.0,
+    ) -> int:
+        now = iso(utcnow())
+        self.conn.execute(
+            """
+            INSERT INTO llm_artifacts
+                (job_id, purpose, prompt_version, provider, model, context_fingerprint,
+                 prompt_hash, source_truth_hash, status, input_json, output_json,
+                 validation_errors, evidence_refs, from_cache, cost_inr, created_at, updated_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            ON CONFLICT(job_id, purpose, prompt_version, provider, model, context_fingerprint)
+            DO UPDATE SET
+                prompt_hash=excluded.prompt_hash,
+                source_truth_hash=excluded.source_truth_hash,
+                status=excluded.status,
+                input_json=excluded.input_json,
+                output_json=excluded.output_json,
+                validation_errors=excluded.validation_errors,
+                evidence_refs=excluded.evidence_refs,
+                from_cache=excluded.from_cache,
+                cost_inr=excluded.cost_inr,
+                updated_at=excluded.updated_at
+            """,
+            (
+                job_id,
+                purpose,
+                prompt_version,
+                provider,
+                model,
+                context_fingerprint,
+                prompt_hash,
+                source_truth_hash,
+                status,
+                json.dumps(input_json, ensure_ascii=True, sort_keys=True),
+                json.dumps(output_json or {}, ensure_ascii=True, sort_keys=True),
+                json.dumps(validation_errors or [], ensure_ascii=True, sort_keys=True),
+                json.dumps(evidence_refs or [], ensure_ascii=True, sort_keys=True),
+                int(from_cache),
+                cost_inr,
+                now,
+                now,
+            ),
+        )
+        row = self.conn.execute(
+            """
+            SELECT id FROM llm_artifacts
+            WHERE job_id=? AND purpose=? AND prompt_version=? AND provider=?
+              AND model=? AND context_fingerprint=?
+            """,
+            (job_id, purpose, prompt_version, provider, model, context_fingerprint),
+        ).fetchone()
+        return int(row["id"])
+
+    def get(self, artifact_id: int) -> sqlite3.Row | None:
+        return self.conn.execute(
+            "SELECT * FROM llm_artifacts WHERE id=?",
+            (artifact_id,),
+        ).fetchone()
+
+    def find_valid(
+        self,
+        *,
+        job_id: int,
+        purpose: str,
+        prompt_version: str,
+        provider: str,
+        model: str,
+        context_fingerprint: str,
+    ) -> sqlite3.Row | None:
+        return self.conn.execute(
+            """
+            SELECT * FROM llm_artifacts
+            WHERE job_id=? AND purpose=? AND prompt_version=? AND provider=?
+              AND model=? AND context_fingerprint=? AND status='valid'
+            ORDER BY updated_at DESC, id DESC
+            LIMIT 1
+            """,
+            (job_id, purpose, prompt_version, provider, model, context_fingerprint),
+        ).fetchone()
+
+    def list(
+        self,
+        *,
+        job_id: int | None = None,
+        purpose: str | None = None,
+        limit: int = 20,
+    ) -> list[sqlite3.Row]:
+        sql = """
+            SELECT la.*, j.title, j.company_name_raw
+            FROM llm_artifacts la
+            JOIN jobs j ON j.id = la.job_id
+            WHERE 1=1
+        """
+        params: list[Any] = []
+        if job_id is not None:
+            sql += " AND la.job_id=?"
+            params.append(job_id)
+        if purpose is not None:
+            sql += " AND la.purpose=?"
+            params.append(purpose)
+        sql += " ORDER BY la.updated_at DESC, la.id DESC LIMIT ?"
+        params.append(limit)
+        return self.conn.execute(sql, tuple(params)).fetchall()
+
+
+class ApplicationAnswerDraftRepo:
+    def __init__(self, conn: sqlite3.Connection):
+        self.conn = conn
+
+    def save(self, draft: GroundedAnswerDraft) -> GroundedAnswerDraft:
+        now = iso(utcnow())
+        self.conn.execute(
+            """
+            INSERT INTO application_answer_drafts
+                (application_id, job_id, question_key, question_text, question_classification,
+                 answer_text, evidence_refs, confidence, review_required, validation_status,
+                 validation_errors, provider, model, prompt_version, context_fingerprint,
+                 prompt_hash, source_truth_hash, from_cache, cost_inr, created_at, updated_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            ON CONFLICT(application_id, question_key, prompt_version, provider, model, context_fingerprint)
+            DO UPDATE SET
+                job_id=excluded.job_id,
+                question_text=excluded.question_text,
+                question_classification=excluded.question_classification,
+                answer_text=excluded.answer_text,
+                evidence_refs=excluded.evidence_refs,
+                confidence=excluded.confidence,
+                review_required=excluded.review_required,
+                validation_status=excluded.validation_status,
+                validation_errors=excluded.validation_errors,
+                prompt_hash=excluded.prompt_hash,
+                source_truth_hash=excluded.source_truth_hash,
+                from_cache=excluded.from_cache,
+                cost_inr=excluded.cost_inr,
+                updated_at=excluded.updated_at
+            """,
+            (
+                draft.application_id,
+                draft.job_id,
+                draft.question_key,
+                draft.question_text,
+                draft.question_classification,
+                draft.answer_text,
+                json.dumps(draft.evidence_refs, ensure_ascii=True, sort_keys=True),
+                draft.confidence,
+                int(draft.review_required),
+                draft.validation_status,
+                json.dumps(
+                    [issue.as_dict() for issue in draft.validation_errors],
+                    ensure_ascii=True,
+                    sort_keys=True,
+                ),
+                draft.provider or "unknown",
+                draft.model or "unknown",
+                draft.prompt_version or "",
+                draft.context_fingerprint or "",
+                draft.prompt_hash or "",
+                draft.source_truth_hash,
+                int(draft.from_cache),
+                draft.cost_inr,
+                now,
+                now,
+            ),
+        )
+        row = self.conn.execute(
+            """
+            SELECT * FROM application_answer_drafts
+            WHERE application_id=? AND question_key=? AND prompt_version=? AND provider=?
+              AND model=? AND context_fingerprint=?
+            """,
+            (
+                draft.application_id,
+                draft.question_key,
+                draft.prompt_version or "",
+                draft.provider or "unknown",
+                draft.model or "unknown",
+                draft.context_fingerprint or "",
+            ),
+        ).fetchone()
+        return _row_to_answer_draft(row)
+
+    def get(self, draft_id: int) -> GroundedAnswerDraft | None:
+        row = self.conn.execute(
+            "SELECT * FROM application_answer_drafts WHERE id=?",
+            (draft_id,),
+        ).fetchone()
+        return _row_to_answer_draft(row) if row is not None else None
+
+    def list_by_application(self, application_id: int) -> list[GroundedAnswerDraft]:
+        rows = self.conn.execute(
+            """
+            SELECT * FROM application_answer_drafts
+            WHERE application_id=?
+            ORDER BY updated_at DESC, id DESC
+            """,
+            (application_id,),
+        ).fetchall()
+        return [_row_to_answer_draft(row) for row in rows]
+
+    def find_by_fingerprint(
+        self,
+        *,
+        application_id: int,
+        prompt_version: str,
+        provider: str,
+        model: str,
+        context_fingerprint: str,
+    ) -> list[GroundedAnswerDraft]:
+        rows = self.conn.execute(
+            """
+            SELECT * FROM application_answer_drafts
+            WHERE application_id=? AND prompt_version=? AND provider=?
+              AND model=? AND context_fingerprint=?
+            ORDER BY question_key
+            """,
+            (application_id, prompt_version, provider, model, context_fingerprint),
+        ).fetchall()
+        return [_row_to_answer_draft(row) for row in rows]
+
+    def set_review_status(
+        self,
+        draft_id: int,
+        *,
+        review_status: str,
+        reviewer_source: str,
+        review_note: str | None = None,
+    ) -> GroundedAnswerDraft | None:
+        self.conn.execute(
+            """
+            UPDATE application_answer_drafts
+            SET review_status=?,
+                reviewer_source=?,
+                reviewed_at=?,
+                review_note=?,
+                updated_at=?
+            WHERE id=?
+            """,
+            (
+                review_status,
+                reviewer_source,
+                iso(utcnow()),
+                review_note,
+                iso(utcnow()),
+                draft_id,
+            ),
+        )
+        return self.get(draft_id)
+
+    def list_by_review_status(
+        self,
+        *,
+        application_id: int | None = None,
+        review_status: str = "pending_review",
+        limit: int = 50,
+    ) -> list[GroundedAnswerDraft]:
+        sql = """
+            SELECT * FROM application_answer_drafts
+            WHERE review_status=?
+        """
+        params: list[Any] = [review_status]
+        if application_id is not None:
+            sql += " AND application_id=?"
+            params.append(application_id)
+        sql += " ORDER BY updated_at DESC, id DESC LIMIT ?"
+        params.append(limit)
+        rows = self.conn.execute(sql, tuple(params)).fetchall()
+        return [_row_to_answer_draft(row) for row in rows]
+
+    def approved_for_application(self, application_id: int) -> list[GroundedAnswerDraft]:
+        rows = self.conn.execute(
+            """
+            SELECT * FROM application_answer_drafts
+            WHERE application_id=?
+              AND review_status='approved'
+              AND validation_status='valid'
+              AND question_classification='safe_free_text'
+            ORDER BY reviewed_at DESC, id DESC
+            """,
+            (application_id,),
+        ).fetchall()
+        return [_row_to_answer_draft(row) for row in rows]
+
+
+class ResumeWordingArtifactRepo:
+    def __init__(self, conn: sqlite3.Connection):
+        self.conn = conn
+
+    def save(self, artifact: ResumeWordingArtifact) -> ResumeWordingArtifact:
+        now = iso(utcnow())
+        self.conn.execute(
+            """
+            INSERT INTO resume_wording_artifacts
+                (job_id, resume_variant_id, purpose, prompt_version, provider, model,
+                 context_fingerprint, prompt_hash, source_truth_hash, request_json,
+                 suggestions_json, validation_status, validation_errors,
+                 errors_json, allowed_evidence_refs, from_cache, cost_inr, created_at, updated_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            ON CONFLICT(job_id, purpose, prompt_version, provider, model, context_fingerprint)
+            DO UPDATE SET
+                resume_variant_id=excluded.resume_variant_id,
+                prompt_hash=excluded.prompt_hash,
+                source_truth_hash=excluded.source_truth_hash,
+                request_json=excluded.request_json,
+                suggestions_json=excluded.suggestions_json,
+                validation_status=excluded.validation_status,
+                validation_errors=excluded.validation_errors,
+                errors_json=excluded.errors_json,
+                allowed_evidence_refs=excluded.allowed_evidence_refs,
+                from_cache=excluded.from_cache,
+                cost_inr=excluded.cost_inr,
+                updated_at=excluded.updated_at
+            """,
+            (
+                artifact.job_id,
+                artifact.resume_variant_id,
+                artifact.purpose,
+                artifact.prompt_version,
+                artifact.provider or "unknown",
+                artifact.model or "unknown",
+                artifact.context_fingerprint,
+                artifact.prompt_hash or "",
+                artifact.source_truth_hash,
+                json.dumps(artifact.request.as_dict() if artifact.request else {}, ensure_ascii=True, sort_keys=True),
+                json.dumps(
+                    [suggestion.as_dict() for suggestion in artifact.suggestions],
+                    ensure_ascii=True,
+                    sort_keys=True,
+                ),
+                artifact.status,
+                json.dumps(
+                    [issue.as_dict() for issue in artifact.validation_errors],
+                    ensure_ascii=True,
+                    sort_keys=True,
+                ),
+                json.dumps(artifact.errors, ensure_ascii=True, sort_keys=True),
+                json.dumps(artifact.allowed_evidence_refs, ensure_ascii=True, sort_keys=True),
+                int(artifact.from_cache),
+                artifact.cost_inr,
+                now,
+                now,
+            ),
+        )
+        row = self.conn.execute(
+            """
+            SELECT * FROM resume_wording_artifacts
+            WHERE job_id=? AND purpose=? AND prompt_version=? AND provider=?
+              AND model=? AND context_fingerprint=?
+            """,
+            (
+                artifact.job_id,
+                artifact.purpose,
+                artifact.prompt_version,
+                artifact.provider or "unknown",
+                artifact.model or "unknown",
+                artifact.context_fingerprint,
+            ),
+        ).fetchone()
+        return _row_to_resume_wording_artifact(row)
+
+    def get(self, artifact_id: int) -> ResumeWordingArtifact | None:
+        row = self.conn.execute(
+            "SELECT * FROM resume_wording_artifacts WHERE id=?",
+            (artifact_id,),
+        ).fetchone()
+        return _row_to_resume_wording_artifact(row) if row is not None else None
+
+    def find_by_fingerprint(
+        self,
+        *,
+        job_id: int,
+        purpose: str,
+        prompt_version: str,
+        provider: str,
+        model: str,
+        context_fingerprint: str,
+    ) -> ResumeWordingArtifact | None:
+        row = self.conn.execute(
+            """
+            SELECT * FROM resume_wording_artifacts
+            WHERE job_id=? AND purpose=? AND prompt_version=? AND provider=?
+              AND model=? AND context_fingerprint=?
+            ORDER BY updated_at DESC, id DESC
+            LIMIT 1
+            """,
+            (job_id, purpose, prompt_version, provider, model, context_fingerprint),
+        ).fetchone()
+        return _row_to_resume_wording_artifact(row) if row is not None else None
+
+    def list_by_job(self, job_id: int, *, limit: int = 20) -> list[ResumeWordingArtifact]:
+        rows = self.conn.execute(
+            """
+            SELECT * FROM resume_wording_artifacts
+            WHERE job_id=?
+            ORDER BY updated_at DESC, id DESC
+            LIMIT ?
+            """,
+            (job_id, limit),
+        ).fetchall()
+        return [_row_to_resume_wording_artifact(row) for row in rows]
+
+    def set_review_status(
+        self,
+        artifact_id: int,
+        *,
+        review_status: str,
+        reviewer_source: str,
+        review_note: str | None = None,
+        promoted_application_id: int | None = None,
+    ) -> ResumeWordingArtifact | None:
+        self.conn.execute(
+            """
+            UPDATE resume_wording_artifacts
+            SET review_status=?,
+                reviewer_source=?,
+                reviewed_at=?,
+                review_note=?,
+                promoted_application_id=?,
+                updated_at=?
+            WHERE id=?
+            """,
+            (
+                review_status,
+                reviewer_source,
+                iso(utcnow()),
+                review_note,
+                promoted_application_id,
+                iso(utcnow()),
+                artifact_id,
+            ),
+        )
+        return self.get(artifact_id)
+
+    def approved_for_job(self, job_id: int) -> ResumeWordingArtifact | None:
+        row = self.conn.execute(
+            """
+            SELECT * FROM resume_wording_artifacts
+            WHERE job_id=?
+              AND review_status='approved'
+              AND validation_status='valid'
+              AND resume_variant_id IS NOT NULL
+            ORDER BY reviewed_at DESC, id DESC
+            LIMIT 1
+            """,
+            (job_id,),
+        ).fetchone()
+        return _row_to_resume_wording_artifact(row) if row is not None else None
+
+    def list_by_review_status(
+        self,
+        *,
+        job_id: int | None = None,
+        review_status: str = "pending_review",
+        limit: int = 50,
+    ) -> list[ResumeWordingArtifact]:
+        sql = """
+            SELECT * FROM resume_wording_artifacts
+            WHERE review_status=?
+        """
+        params: list[Any] = [review_status]
+        if job_id is not None:
+            sql += " AND job_id=?"
+            params.append(job_id)
+        sql += " ORDER BY updated_at DESC, id DESC LIMIT ?"
+        params.append(limit)
+        rows = self.conn.execute(sql, tuple(params)).fetchall()
+        return [_row_to_resume_wording_artifact(row) for row in rows]
 
 
 class LlmCallRepo:

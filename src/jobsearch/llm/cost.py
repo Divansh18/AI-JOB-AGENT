@@ -1,7 +1,7 @@
 """Token cost accounting.
 
-Prices are USD per million tokens, first-party Anthropic API rates. Cache
-reads bill at 10% of base input and cache writes at 125%.
+Prices are USD per million tokens. Cache reads bill at 10% of base input and
+cache writes at 125% where the provider exposes those token classes.
 """
 
 from __future__ import annotations
@@ -10,6 +10,8 @@ PRICING_USD_PER_MTOK = {
     "claude-haiku-4-5": {"input": 1.00, "output": 5.00},
     "claude-sonnet-5": {"input": 2.00, "output": 10.00},
     "claude-opus-5": {"input": 5.00, "output": 25.00},
+    "gpt-4.1-mini": {"input": 0.40, "output": 1.60},
+    "gpt-4o-mini": {"input": 0.15, "output": 0.60},
 }
 
 CACHE_READ_MULTIPLIER = 0.10

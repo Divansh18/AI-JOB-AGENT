@@ -6,22 +6,37 @@ http:
   timeout_seconds: 20
   max_retries: 3
   requests_per_second: 3.0
-  user_agent: "jobsearch-personal/0.1 (personal job search; contact@chatmro.com)"
+  user_agent: "jobsearch-personal/0.1"
 
 llm:
-  # Phase 0 runs entirely without an LLM. Recurring cost at this setting: 0.
-  enabled: false
+  # Optional LLM Application Intelligence.
+  enabled: true
 
-  # Provider is config-driven. Switching requires no code change:
-  #   claude_cli -> temporary local runtime, needs the `claude` binary on PATH
-  #   anthropic  -> long-term, needs ANTHROPIC_API_KEY in the environment
-  provider: claude_cli
+  # Supported providers:
+  #   claude_cli -> local Claude CLI runtime
+  #   anthropic  -> requires ANTHROPIC_API_KEY
+  #   openai     -> requires OPENAI_API_KEY
+  provider: openai
 
-  model: claude-haiku-4-5
+  model: gpt-4.1-mini
+
+  # Cost controls
   daily_cap_inr: 15.0
+  monthly_cap_inr: 500.0
+  per_call_cap_inr: 25.0
   usd_to_inr: 88.0
+
+  # Context/output limits
   max_jd_chars: 6000
+  max_input_chars: 16000
   max_output_tokens: 1024
+
+  # Prompt/cache versions
+  prompt_version: application_intelligence_v1
+  answer_prompt_version: application_answer_drafting_v1
+  resume_wording_prompt_version: resume_wording_v2
+
+  # Provider timeouts
   cli_timeout_seconds: 120
   api_timeout_seconds: 60
 

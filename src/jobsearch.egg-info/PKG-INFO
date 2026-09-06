@@ -12,6 +12,9 @@ Requires-Dist: rapidfuzz>=3.9
 Requires-Dist: numpy>=1.26
 Requires-Dist: python-dateutil>=2.9
 Requires-Dist: selectolax>=0.3.21
+Requires-Dist: pypdf>=5.0
+Requires-Dist: playwright>=1.47
+Requires-Dist: openai>=1.99
 Provides-Extra: embeddings
 Requires-Dist: fastembed>=0.3; extra == "embeddings"
 Provides-Extra: dev

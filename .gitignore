@@ -9,3 +9,4 @@ __pycache__/
 config/companies.candidates.yaml
 assets/resume/*.pdf
 output/
+*.egg-info/

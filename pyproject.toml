@@ -15,6 +15,7 @@ dependencies = [
     "selectolax>=0.3.21",
     "pypdf>=5.0",
     "playwright>=1.47",
+    "openai>=1.99",
 ]
 
 [project.optional-dependencies]
@@ -67,4 +68,8 @@ source_modules = [
     "jobsearch.domain", "jobsearch.services", "jobsearch.sources",
     "jobsearch.persistence", "jobsearch.render",
 ]
-forbidden_modules = ["jobsearch.llm.claude_cli", "jobsearch.llm.anthropic_provider"]
+forbidden_modules = [
+    "jobsearch.llm.claude_cli",
+    "jobsearch.llm.anthropic_provider",
+    "jobsearch.llm.openai_provider",
+]

@@ -165,14 +165,14 @@ class LLMProvider(Protocol):
 
 # --- factory ---------------------------------------------------------------
 
-PROVIDERS = ("claude_cli", "anthropic")
+PROVIDERS = ("claude_cli", "anthropic", "openai")
 
 
 def get_provider(llm_settings) -> LLMProvider:
     """Build the configured provider.
 
     Concrete providers are imported lazily so that a missing optional
-    dependency (the anthropic SDK, or the claude binary) can never break
+    dependency (an API SDK, or the claude binary) can never break
     import of the deterministic pipeline.
     """
     name = getattr(llm_settings, "provider", "claude_cli")
@@ -184,6 +184,10 @@ def get_provider(llm_settings) -> LLMProvider:
         from .anthropic_provider import AnthropicProvider
 
         return AnthropicProvider(llm_settings)
+    if name == "openai":
+        from .openai_provider import OpenAIProvider
+
+        return OpenAIProvider(llm_settings)
     raise LLMUnavailableError(
         f"unknown llm.provider {name!r}; expected one of {list(PROVIDERS)}"
     )
