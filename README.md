@@ -1,6 +1,8 @@
-# jobsearch — Phase 0
+# AI Job Search Agent
 
-Personal job discovery, ranking and application ledger.
+A personal agent I built for my own job search. It pulls live postings from Greenhouse, Lever and Ashby, removes duplicates, filters and ranks roles with local embeddings, and tracks my applications.
+
+The CLI is called `jobsearch`. This is **Phase 0**.
 
 **Scope:** `discover → normalize → dedupe → hard-filter → rank → daily digest → application ledger`
 
@@ -154,4 +156,3 @@ Estimated cost if enabled (Haiku 4.5, $1/$5 per MTok, ₹88/USD):
 
 Golden fixtures are recorded API payloads, so an ATS changing its response
 shape fails a test rather than silently producing empty jobs.
-# AI-JOB-AGENT
